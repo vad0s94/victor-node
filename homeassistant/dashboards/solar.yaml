@@ -1,4 +1,4 @@
-# Dashboard "Дача" for the Victor remote node.
+# Dashboard for the Victor solar station.
 # Create: Settings -> Dashboards -> Add dashboard -> "New dashboard from scratch",
 # open it -> ⋮ -> Edit -> ⋮ -> Raw configuration editor -> paste this file.
 #
@@ -14,10 +14,10 @@
 # The power-flow card config follows aver-ua/esphome-hybrid-inverter-2341
 # examples/lovelace-powmr.yaml (Apache-2.0), with entities renamed to this node.
 
-title: Дача
+title: СЕС
 views:
-  - title: Дача
-    path: dacha
+  - title: СЕС
+    path: solar
     icon: mdi:home-lightning-bolt
     type: sections
     max_columns: 3
@@ -34,7 +34,7 @@ views:
             card:
               type: markdown
               content: >
-                <ha-alert alert-type="warning">Блок на дачі не на зв'язку, дані можуть бути застарілі.</ha-alert>
+                <ha-alert alert-type="warning">Блок моніторингу не на зв'язку, дані можуть бути застарілі.</ha-alert>
           - type: custom:sunsynk-power-flow-card
             cardstyle: lite
             show_solar: true

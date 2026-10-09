@@ -1,12 +1,11 @@
 # Inverter over RS232, Voltronic PI30 (Q-commands) via ESPHome's built-in
-# pipsolar component. Used for the home prototype on the SP-3200 and as the
-# fallback if the remote inverter turns out to speak PI30 instead of Modbus.
+# pipsolar component. Used for Voltronic, Axpert, EASun, MPP Solar and compatible units.
 #
 # Entity names follow the Modbus package where possible ("PV Power", "Load Power",
 # "Battery Voltage" ...) so dashboards need few changes between the two.
 #
 # Expects substitutions: inverter_tx_pin, inverter_rx_pin, update_interval.
-# MUCHGC values below fit the 24 V SP-3200 (2..60 A). A 48 V PI30 unit accepts up
+# MUCHGC values below fit 24 V models (2..60 A). A 48 V PI30 unit accepts up
 # to 100 A: extend possible_values and the number's max_value for it.
 
 uart:

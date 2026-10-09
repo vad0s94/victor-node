@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Firmware Configuration Constructor for Inverter & BMS Gateways.
 
-Generates custom ESPHome configurations for any supported inverter, BMS,
-board, and transport mechanism (Native HA API, standard MQTT, TLS MQTT, flespi).
+Generates custom ESPHome configurations for any supported inverter, BMS
+(JK BMS, Daly BMS, JBD/Xiaoxiang BMS, single or parallel packs), board,
+and transport mechanism (Native HA API, standard MQTT, TLS MQTT, flespi).
 
 Usage:
   # Interactive wizard:
@@ -11,14 +12,17 @@ Usage:
   # Using a preset:
   python3 tools/constructor.py --preset powmr-jk-api -o esphome/my-node.yaml
 
+  # Parallel battery packs (2x JK BMS):
+  python3 tools/constructor.py --preset powmr-2xjk-api -o esphome/my-2xjk.yaml
+
   # Custom command line:
-  python3 tools/constructor.py \\
-    --name my-inverter \\
-    --board esp32dev \\
-    --inverter powmr_2341 \\
-    --bms jk_ble \\
-    --transport api \\
-    --rules \\
+  python3 tools/constructor.py \
+    --name my-inverter \
+    --board esp32dev \
+    --inverter powmr_2341 \
+    --bms daly_ble \
+    --transport api \
+    --rules \
     -o esphome/my-inverter.yaml
 """
 import argparse
@@ -32,6 +36,7 @@ PRESETS = {
         "description": "PowMr/Victor (Modbus 2341) + JK BMS (BLE) + Native Home Assistant API",
         "inverter": "powmr_2341",
         "bms": "jk_ble",
+        "bms_packs": 1,
         "transport": "api",
         "rules": True,
     },
@@ -39,13 +44,55 @@ PRESETS = {
         "description": "PowMr/Victor (Modbus 2341) + JK BMS (BLE) + Universal MQTT",
         "inverter": "powmr_2341",
         "bms": "jk_ble",
+        "bms_packs": 1,
         "transport": "mqtt",
+        "rules": True,
+    },
+    "powmr-2xjk-api": {
+        "description": "PowMr/Victor (Modbus 2341) + 2x JK BMS (Parallel Bank) + Native HA API",
+        "inverter": "powmr_2341",
+        "bms": "jk_ble",
+        "bms_packs": 2,
+        "transport": "api",
+        "rules": True,
+    },
+    "powmr-daly-api": {
+        "description": "PowMr/Victor (Modbus 2341) + Daly BMS (BLE) + Native Home Assistant API",
+        "inverter": "powmr_2341",
+        "bms": "daly_ble",
+        "bms_packs": 1,
+        "transport": "api",
+        "rules": True,
+    },
+    "powmr-2xdaly-api": {
+        "description": "PowMr/Victor (Modbus 2341) + 2x Daly BMS (Parallel Bank) + Native HA API",
+        "inverter": "powmr_2341",
+        "bms": "daly_ble",
+        "bms_packs": 2,
+        "transport": "api",
+        "rules": True,
+    },
+    "powmr-jbd-api": {
+        "description": "PowMr/Victor (Modbus 2341) + JBD / Xiaoxiang BMS (BLE) + Native Home Assistant API",
+        "inverter": "powmr_2341",
+        "bms": "jbd_ble",
+        "bms_packs": 1,
+        "transport": "api",
+        "rules": True,
+    },
+    "powmr-2xjbd-api": {
+        "description": "PowMr/Victor (Modbus 2341) + 2x JBD BMS (Parallel Bank) + Native HA API",
+        "inverter": "powmr_2341",
+        "bms": "jbd_ble",
+        "bms_packs": 2,
+        "transport": "api",
         "rules": True,
     },
     "powmr-nobms-api": {
         "description": "PowMr/Victor (Modbus 2341) - Inverter Only (No BMS) + Native HA API",
         "inverter": "powmr_2341",
         "bms": "none",
+        "bms_packs": 1,
         "transport": "api",
         "rules": False,
     },
@@ -53,6 +100,23 @@ PRESETS = {
         "description": "Voltronic PI30 (Axpert/EASun) + JK BMS (BLE) + Native HA API",
         "inverter": "pi30",
         "bms": "jk_ble",
+        "bms_packs": 1,
+        "transport": "api",
+        "rules": False,
+    },
+    "voltronic-daly-api": {
+        "description": "Voltronic PI30 (Axpert/EASun) + Daly BMS (BLE) + Native HA API",
+        "inverter": "pi30",
+        "bms": "daly_ble",
+        "bms_packs": 1,
+        "transport": "api",
+        "rules": False,
+    },
+    "voltronic-jbd-api": {
+        "description": "Voltronic PI30 (Axpert/EASun) + JBD BMS (BLE) + Native HA API",
+        "inverter": "pi30",
+        "bms": "jbd_ble",
+        "bms_packs": 1,
         "transport": "api",
         "rules": False,
     },
@@ -60,6 +124,7 @@ PRESETS = {
         "description": "Voltronic PI30 (Axpert/EASun) - Inverter Only (No BMS) + Native HA API",
         "inverter": "pi30",
         "bms": "none",
+        "bms_packs": 1,
         "transport": "api",
         "rules": False,
     },
@@ -67,6 +132,7 @@ PRESETS = {
         "description": "Protocol Diagnostic Scanner over MQTT",
         "inverter": "probe",
         "bms": "none",
+        "bms_packs": 1,
         "transport": "mqtt",
         "rules": False,
     },
@@ -82,6 +148,7 @@ def build_config(
     inverter_tx="GPIO16",
     inverter_rx="GPIO17",
     bms="jk_ble",
+    bms_packs=1,
     bms_protocol="JK02_32S",
     transport="api",
     mqtt_broker="192.168.1.100",
@@ -118,7 +185,7 @@ def build_config(
         subs["mqtt_log_level"] = "WARN"
         subs["mqtt_reboot_timeout"] = "60min"
         if transport == "mqtt_tls":
-            subs["certificate_authority"] = '!secret mqtt_ca_cert'
+            subs["certificate_authority"] = "!secret mqtt_ca_cert"
     elif transport == "flespi":
         subs["mqtt_prefix"] = mqtt_prefix
         subs["discovery_prefix"] = f"{name}/ha"
@@ -134,11 +201,34 @@ def build_config(
         subs["select_skip_updates"] = '"2"'
         subs["modbus_write_multiple"] = '"false"'
 
+    # BMS Substitutions
     if bms == "jk_ble":
-        subs["bms_default_mac"] = '"00:00:00:00:00:00"'
         subs["jk_bms_source"] = "github://syssi/esphome-jk-bms@59c994e726c34b123e43eb0090736fd94706f0db"
         subs["bms_protocol"] = bms_protocol
         subs["bms_throttle"] = "10s"
+        if bms_packs == 2:
+            subs["bms1_default_mac"] = '"00:00:00:00:00:00"'
+            subs["bms2_default_mac"] = '"00:00:00:00:00:00"'
+        else:
+            subs["bms_default_mac"] = '"00:00:00:00:00:00"'
+    elif bms == "daly_ble":
+        subs["daly_bms_source"] = "github://syssi/esphome-daly-bms@ebfe3a7be3fae1e1808f3244a2d68e9b5eabf8ff"
+        subs["bms_password"] = '"12345678"'
+        subs["bms_status_registers"] = '"62"'
+        subs["bms_throttle"] = "10s"
+        if bms_packs == 2:
+            subs["bms1_default_mac"] = '"00:00:00:00:00:00"'
+            subs["bms2_default_mac"] = '"00:00:00:00:00:00"'
+        else:
+            subs["bms_default_mac"] = '"00:00:00:00:00:00"'
+    elif bms == "jbd_ble":
+        subs["jbd_bms_source"] = "github://syssi/esphome-jbd-bms@f70ad25b0a5bf67e29c91461ab1fccbb4ba30f58"
+        subs["bms_throttle"] = "5s"
+        if bms_packs == 2:
+            subs["bms1_default_mac"] = '"00:00:00:00:00:00"'
+            subs["bms2_default_mac"] = '"00:00:00:00:00:00"'
+        else:
+            subs["bms_default_mac"] = '"00:00:00:00:00:00"'
 
     # Packages block
     packages = [
@@ -162,19 +252,25 @@ def build_config(
     elif inverter == "pi30":
         packages.append(("inverter", "packages/inverter-pi30.yaml"))
 
-    if bms == "jk_ble":
-        packages.append(("bms", "packages/bms-jk-ble.yaml"))
+    # BMS Packages
+    if bms != "none":
+        bms_prefix = {"jk_ble": "jk", "daly_ble": "daly", "jbd_ble": "jbd"}.get(bms)
+        if bms_packs == 2:
+            packages.append(("bms", f"packages/bms-{bms_prefix}-ble-parallel.yaml"))
+        else:
+            packages.append(("bms", f"packages/bms-{bms_prefix}-ble.yaml"))
 
-    if rules and inverter == "powmr_2341" and bms == "jk_ble":
+    if rules and inverter == "powmr_2341" and bms != "none":
         packages.append(("rules", "packages/rules-soc.yaml"))
 
     if temp_sensor:
         packages.append(("temperature", "packages/temp-ds18b20.yaml"))
 
     # Render YAML
+    pack_desc = f"{bms} ({bms_packs} pack{'s' if bms_packs > 1 else ''})" if bms != "none" else "None"
     lines = [
         f"# {friendly_name} configuration generated by victor-node constructor",
-        f"# Board: {board} | Inverter: {inverter} | BMS: {bms} | Transport: {transport}",
+        f"# Board: {board} | Inverter: {inverter} | BMS: {pack_desc} | Transport: {transport}",
         "#",
         "# Build: tools/build.sh <this_file.yaml>",
         "",
@@ -223,24 +319,29 @@ def interactive_wizard():
         if rx: inverter_rx = rx
 
     print("\n3. Battery Management System (BMS):")
-    print("  Do you want to monitor and control a battery BMS via ESP32?")
-    print("  [1] Yes - JK BMS over Bluetooth (BLE):")
-    print("      - Monitors every cell voltage (1..16S/24S), total SoC, charge/discharge power")
-    print("      - Controls active balancer, heating, and exposes 45+ settings directly in HA")
-    print("      - Enables on-device autonomous battery protection and charging rules")
-    print("  [2] No BMS - Inverter monitoring only:")
-    print("      - Lightweight firmware without Bluetooth stack")
-    print("      - Ideal for lead-acid batteries or setups where battery is monitored separately")
+    print("  Do you need battery BMS integration?")
+    print("  [1] JK BMS (BLE, syssi/esphome-jk-bms) - Most popular, active balancer, 45+ sensors")
+    print("  [2] Daly BMS (BLE, syssi/esphome-daly-bms) - Daly Smart BMS (Blue/standard)")
+    print("  [3] JBD / Xiaoxiang BMS (BLE, syssi/esphome-jbd-bms) - Liontron / Overkill Solar / JBD")
+    print("  [4] No BMS - Inverter monitoring only (standalone)")
     bms_choice = input("Choice [1]: ").strip() or "1"
-    bms = {"1": "jk_ble", "2": "none"}.get(bms_choice, "jk_ble")
+    bms = {"1": "jk_ble", "2": "daly_ble", "3": "jbd_ble", "4": "none"}.get(bms_choice, "jk_ble")
 
+    bms_packs = 1
     bms_protocol = "JK02_32S"
-    if bms == "jk_ble":
-        print("\n  Select JK BMS Hardware / Protocol Version:")
-        print("    [1] JK02_32S (Recommended: HW 11.x and newer, 24S / 32S boards, PB-series)")
-        print("    [2] JK02_24S (Legacy: HW version < 11.x, older 24S boards)")
-        bp_choice = input("  Choice [1]: ").strip() or "1"
-        bms_protocol = "JK02_24S" if bp_choice == "2" else "JK02_32S"
+    if bms != "none":
+        print("\n  Battery Bank Configuration (Parallel Packs):")
+        print("    [1] Single battery pack (1 BMS)")
+        print("    [2] 2 parallel battery packs (2 BMSs with bank aggregation & SoC delta warning)")
+        p_choice = input("  Choice [1]: ").strip() or "1"
+        bms_packs = 2 if p_choice == "2" else 1
+
+        if bms == "jk_ble":
+            print("\n  Select JK BMS Hardware / Protocol Version:")
+            print("    [1] JK02_32S (Recommended: HW 11.x and newer, 24S / 32S boards, PB-series)")
+            print("    [2] JK02_24S (Legacy: HW version < 11.x, older 24S boards)")
+            bp_choice = input("  Choice [1]: ").strip() or "1"
+            bms_protocol = "JK02_24S" if bp_choice == "2" else "JK02_32S"
 
     print("\n4. Select Transport / Communication:")
     print("  [1] Native Home Assistant API (Direct connection, auto-discovered, NO broker required!)")
@@ -262,7 +363,7 @@ def interactive_wizard():
         mqtt_password = input("MQTT Password (optional): ").strip()
 
     rules = False
-    if inverter == "powmr_2341" and bms == "jk_ble":
+    if inverter == "powmr_2341" and bms != "none":
         r_choice = input("\nEnable autonomous battery SOC rules on device? [Y/n]: ").strip().lower()
         rules = (r_choice != "n")
 
@@ -281,6 +382,7 @@ def interactive_wizard():
         inverter_tx=inverter_tx,
         inverter_rx=inverter_rx,
         bms=bms,
+        bms_packs=bms_packs,
         bms_protocol=bms_protocol,
         transport=transport,
         mqtt_broker=mqtt_broker,
@@ -308,7 +410,8 @@ def main():
     parser.add_argument("--inverter", default="powmr_2341", choices=["powmr_2341", "pi30", "probe"], help="Inverter type")
     parser.add_argument("--inverter-tx", default="GPIO16", help="TX pin (default: GPIO16)")
     parser.add_argument("--inverter-rx", default="GPIO17", help="RX pin (default: GPIO17)")
-    parser.add_argument("--bms", default="jk_ble", choices=["jk_ble", "none"], help="BMS type")
+    parser.add_argument("--bms", default="jk_ble", choices=["jk_ble", "daly_ble", "jbd_ble", "none"], help="BMS type")
+    parser.add_argument("--bms-packs", type=int, default=1, choices=[1, 2], help="Number of battery packs (1 or 2 parallel packs)")
     parser.add_argument("--bms-protocol", default="JK02_32S", choices=["JK02_32S", "JK02_24S"], help="JK BMS protocol")
     parser.add_argument("--transport", default="api", choices=["api", "mqtt", "mqtt_tls", "flespi"], help="Transport")
     parser.add_argument("--mqtt-broker", default="192.168.1.100", help="MQTT broker host")
@@ -330,12 +433,14 @@ def main():
     rules = args.rules
     inverter = args.inverter
     bms = args.bms
+    bms_packs = args.bms_packs
     transport = args.transport
 
     if args.preset:
         preset_data = PRESETS[args.preset]
         inverter = preset_data["inverter"]
         bms = preset_data["bms"]
+        bms_packs = preset_data.get("bms_packs", 1)
         transport = preset_data["transport"]
         rules = preset_data["rules"]
 
@@ -351,6 +456,7 @@ def main():
         inverter_tx=args.inverter_tx,
         inverter_rx=args.inverter_rx,
         bms=bms,
+        bms_packs=bms_packs,
         bms_protocol=args.bms_protocol,
         transport=transport,
         mqtt_broker=args.mqtt_broker,

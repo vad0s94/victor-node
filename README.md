@@ -117,10 +117,10 @@ tools/build.sh esphome/my-solar.yaml
 | `tools/build.sh` | Кросплатформний скрипт збірки прошивок (`.factory.bin`, `.ota.bin`, `.md5`) |
 | `tools/check-entities.py` | Валідатор сутностей між ESPHome та Home Assistant |
 | `mosquitto/` | Шаблони налаштування мостів Mosquitto ([`bridge-universal.conf.example`](mosquitto/bridge-universal.conf.example)) |
-| `homeassistant/dashboards/` | Готовий дашборд «Дача» ([`dacha.yaml`](homeassistant/dashboards/dacha.yaml)) з картками Sunsynk та JK BMS |
+| `homeassistant/dashboards/` | Готовий дашборд СЕС ([`solar.yaml`](homeassistant/dashboards/solar.yaml)) з картками Sunsynk та BMS |
 | `homeassistant/packages/` | Пакет автоматизацій та сповіщень ([`victor.yaml`](homeassistant/packages/victor.yaml)) |
 | `.github/workflows/` | CI валідація, реліз матриця та онлайн-конструктор прошивок |
-| `docs/` | Повна документація: [залізо](docs/hardware.md), [мости](docs/mqtt-bridges.md), [тест](docs/home-test.md), [інструкція для родича](docs/onsite-uk.md), [runbook](docs/runbook.md) |
+| `docs/` | Повна документація: [залізо](docs/hardware.md), [мости](docs/mqtt-bridges.md), [тест](docs/home-test.md), [інструкція для людини на місці](docs/onsite-uk.md), [runbook](docs/runbook.md) |
 
 ---
 
@@ -145,7 +145,7 @@ tools/build.sh esphome/my-solar.yaml
 2. [docs/mqtt-bridges.md](docs/mqtt-bridges.md) — Підключення до Home Assistant: Native API, локальний MQTT, хмарні мости (flespi, HiveMQ тощо).
 3. [docs/firmware.md](docs/firmware.md) — Робота з прошивками, OTA через інтернет, пошук протоколу.
 4. [docs/home-assistant.md](docs/home-assistant.md) — Встановлення карток HACS, імпорт дашборда та сповіщень.
-5. [docs/onsite-uk.md](docs/onsite-uk.md) — Проста пам'ятка для родича на місці (як встромити кабель і підключити Wi-Fi).
+5. [docs/onsite-uk.md](docs/onsite-uk.md) — Проста пам'ятка для людини на місці (як підключити кабель і налаштувати Wi-Fi).
 6. [docs/runbook.md](docs/runbook.md) — Алгоритм діагностики та вирішення можливих проблем.
 
 ---

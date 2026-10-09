@@ -1,15 +1,15 @@
-# Home prototype: the same hardware and cloud path as the remote node, talking
-# to the home SP-3200 (PI30) and a home JK BMS. Proves wiring, MAX3232, flespi,
-# the bridge, BLE and remote OTA before the box is shipped.
+# Test bench configuration: the same hardware and cloud path as the production node,
+# talking to a Voltronic PI30 inverter and a JK BMS. Proves wiring, MAX3232, MQTT bridge,
+# BLE and remote OTA before the box is deployed.
 #
 # Uses the same node name and MQTT prefix as victor.yaml on purpose, so the
 # Home Assistant side (bridge, dashboard) is exercised end to end.
-# Before shipping, flash victor.yaml (Modbus 2341) over this one.
+# Before deploying to a Modbus inverter, flash victor.yaml (Modbus 2341) over this one.
 
 substitutions:
   node_name: victor
   friendly_name: Victor
-  area: "Дача"
+  area: "СЕС"
   board: esp32dev
   led_pin: GPIO2
 
@@ -21,8 +21,7 @@ substitutions:
   inverter_rx_pin: GPIO17
   update_interval: 15s
 
-  # Home JK BMS "battery_7700wh". Disable the home jk-bms-gateway BLE switch
-  # while testing: a JK BMS accepts only one BLE connection.
+  # Test JK BMS. Note: a JK BMS accepts only one BLE connection at a time.
   bms_default_mac: "C8:47:80:1D:0C:E3"
   jk_bms_source: github://syssi/esphome-jk-bms@59c994e726c34b123e43eb0090736fd94706f0db
   bms_protocol: JK02_32S

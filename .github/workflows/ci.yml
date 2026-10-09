@@ -26,9 +26,13 @@ jobs:
 
       - name: Fetch reference upstream components
         run: |
-          mkdir -p tools/ref/jk-src
+          mkdir -p tools/ref/jk-src tools/ref/daly-src tools/ref/jbd-src
           curl -sSL "https://codeload.github.com/syssi/esphome-jk-bms/tar.gz/59c994e726c34b123e43eb0090736fd94706f0db" \
             | tar -xz -C tools/ref/jk-src --strip-components=1
+          curl -sSL "https://codeload.github.com/syssi/esphome-daly-bms/tar.gz/ebfe3a7be3fae1e1808f3244a2d68e9b5eabf8ff" \
+            | tar -xz -C tools/ref/daly-src --strip-components=1
+          curl -sSL "https://codeload.github.com/syssi/esphome-jbd-bms/tar.gz/f70ad25b0a5bf67e29c91461ab1fccbb4ba30f58" \
+            | tar -xz -C tools/ref/jbd-src --strip-components=1
 
       - name: Setup dummy secrets for validation
         run: |
@@ -37,19 +41,31 @@ jobs:
       - name: Test constructor presets generation
         run: |
           python3 tools/constructor.py --preset powmr-jk-api -o esphome/test-powmr-jk-api.yaml
-          python3 tools/constructor.py --preset powmr-jk-mqtt -o esphome/test-powmr-jk-mqtt.yaml
+          python3 tools/constructor.py --preset powmr-2xjk-api -o esphome/test-powmr-2xjk-api.yaml
+          python3 tools/constructor.py --preset powmr-daly-api -o esphome/test-powmr-daly-api.yaml
+          python3 tools/constructor.py --preset powmr-2xdaly-api -o esphome/test-powmr-2xdaly-api.yaml
+          python3 tools/constructor.py --preset powmr-jbd-api -o esphome/test-powmr-jbd-api.yaml
+          python3 tools/constructor.py --preset powmr-2xjbd-api -o esphome/test-powmr-2xjbd-api.yaml
           python3 tools/constructor.py --preset powmr-nobms-api -o esphome/test-powmr-nobms-api.yaml
           python3 tools/constructor.py --preset voltronic-jk-api -o esphome/test-voltronic-jk-api.yaml
+          python3 tools/constructor.py --preset voltronic-daly-api -o esphome/test-voltronic-daly-api.yaml
+          python3 tools/constructor.py --preset voltronic-jbd-api -o esphome/test-voltronic-jbd-api.yaml
           python3 tools/constructor.py --preset voltronic-nobms-api -o esphome/test-voltronic-nobms-api.yaml
-          rm esphome/test-*.yaml
 
       - name: Validate ESPHome configurations
         run: |
           JK_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/jk-src/components"
-          for cfg in victor.yaml victor-pi30.yaml powmr-jk-api.yaml powmr-jk-mqtt.yaml powmr-nobms-api.yaml voltronic-jk-api.yaml voltronic-nobms-api.yaml; do
+          DALY_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/daly-src/components"
+          JBD_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/jbd-src/components"
+          for cfg in victor.yaml victor-pi30.yaml powmr-jk-api.yaml powmr-jk-mqtt.yaml powmr-nobms-api.yaml voltronic-jk-api.yaml voltronic-nobms-api.yaml test-*.yaml; do
             echo "==> Validating $cfg..."
-            esphome -s jk_bms_source "$JK_SRC_ABS" config "esphome/$cfg"
+            esphome \
+              -s jk_bms_source "$JK_SRC_ABS" \
+              -s daly_bms_source "$DALY_SRC_ABS" \
+              -s jbd_bms_source "$JBD_SRC_ABS" \
+              config "esphome/$cfg"
           done
+          rm -f esphome/test-*.yaml
 
       - name: Check Home Assistant entity parity
         run: |

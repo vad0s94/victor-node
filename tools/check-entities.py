@@ -67,7 +67,7 @@ for domain in domains:
     walk(domain, config.get(domain, []))
 
 refs = set()
-for f in ("homeassistant/dashboards/dacha.yaml", "homeassistant/packages/victor.yaml"):
+for f in ("homeassistant/dashboards/solar.yaml", "homeassistant/packages/victor.yaml"):
     refs |= set(re.findall(r"\b(?:sensor|binary_sensor|switch|select|number|button|text)\.victor_[a-z0-9_]+",
                            (ROOT / f).read_text()))
 

@@ -7,7 +7,7 @@
 substitutions:
   node_name: victor
   friendly_name: Victor
-  area: "Дача"
+  area: "СЕС"
   board: esp32dev                 # ESP32-WROOM-32U DevKit; use wemos_d1_mini32 for the D1 Mini ESP32
   led_pin: GPIO2
 

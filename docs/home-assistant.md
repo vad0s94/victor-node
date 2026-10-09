@@ -16,7 +16,7 @@ Mushroom уже стоїть, але для дашборда він не пот�
 2. Скопіювати `homeassistant/packages/victor.yaml` у `/config/packages/victor.yaml`.
 3. Developer tools → YAML → Check configuration → Restart.
 
-Сповіщення йдуть у `notify.all_devices`. Щоб отримував і родич: після того як він поставить застосунок HA і залогіниться, додати його `notify.mobile_app_<телефон>` у цю групу або в дії автоматизацій.
+Сповіщення йдуть у `notify.all_devices`. Щоб отримували інші користувачі: після встановлення застосунку HA додати їхній `notify.mobile_app_<телефон>` у цю групу або в дії автоматизацій.
 
 | Подія | Коли |
 |---|---|
@@ -26,23 +26,21 @@ Mushroom уже стоїть, але для дашборда він не пот�
 | Помилка інвертора / BMS | будь-яка нова помилка |
 | Блок не чує інвертор або BMS | 5 хв |
 
-## 3. Дашборд «Дача»
-Settings → Dashboards → Add dashboard → New dashboard from scratch → назва «Дача» → відкрити → ⋮ → Edit → ⋮ → Raw configuration editor → вставити `homeassistant/dashboards/dacha.yaml`.
+## 3. Дашборд «Сонячна станція»
+Settings → Dashboards → Add dashboard → New dashboard from scratch → назва «СЕС» → відкрити → ⋮ → Edit → ⋮ → Raw configuration editor → вставити `homeassistant/dashboards/solar.yaml`.
 
 Замінити в ньому:
 - `ADMIN_USER_ID` на свій id (Settings → People → Users → твій користувач, id в адресі сторінки): вкладку «Налаштування» бачитимеш лише ти;
-- `battery.energy` на ємність батареї на дачі у Вт·год.
+- `battery.energy` на ємність батареї у Вт·год.
 
 ## 4. Зона і мітка
-- Зона «Дача» створиться сама: прошивка передає `area: Дача`.
-- Settings → Labels → створити `victor`, позначити нею пристрій Victor і автоматизації `Дача: ...`.
+- Зона створиться автоматично відповідно до `area` у прошивці.
+- Settings → Labels → створити `victor`, позначити нею пристрій і автоматизації.
 
-## 5. Користувач для родича
+## 5. Додатковий користувач (неадміністратор)
 1. Settings → People → Add person → увімкнути «Allow person to login», **без** «Administrator».
-2. Dashboards → «Дача» → ⋮ → увімкнути «Show in sidebar». Інші дашборди (Overview, Energy тощо) → «Admin only» або сховати з бокової панелі в профілі родича.
-3. Заходить через твою адресу cloudflared або застосунок HA.
-
-Обмеження HA: неадмін-користувач технічно може керувати будь-якою сутністю через API. Приховування — це зручність, а не захист; для свого родича цього достатньо.
+2. Dashboards → «СЕС» → ⋮ → увімкнути «Show in sidebar». Інші дашборди (Overview, Energy тощо) → «Admin only» або сховати з бокової панелі в профілі користувача.
+3. Заходить через вашу адресу або застосунок HA.
 
 ## 6. Перевірити назви сутностей
-Після першого підключення блоку: Settings → Devices → Victor. Дашборд і пакет розраховані на `sensor.victor_<назва>` (`discovery_object_id_generator: device_name`). Якщо HA назвав щось інакше, виправ у `dacha.yaml` / `victor.yaml`.
+Після першого підключення блоку: Settings → Devices → Victor. Дашборд і пакет розраховані на `sensor.victor_<назва>` (`discovery_object_id_generator: device_name`). Якщо HA назвав щось інакше, виправ у `solar.yaml` / `victor.yaml`.

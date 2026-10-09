@@ -1,0 +1,14 @@
+{
+  "name": "Voltronic PI30 + JBD / Xiaoxiang BMS (Home Assistant API)",
+  "version": "1.0.0",
+  "home_assistant_domain": "esphome",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "../firmware/voltronic-jbd-api.factory.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+# Shared Bluetooth Low Energy (BLE) discovery tracker for all BMS types.
+# Scans nearby BLE advertisements and publishes detected BMS devices to Home Assistant.
+
+globals:
+  - id: bms_found
+    type: std::map<std::string, std::string>
+
+esp32_ble_tracker:
+  scan_parameters:
+    active: true
+  on_ble_advertise:
+    - then:
+        - lambda: |-
+            auto name = x.get_name();
+            char mac[18];
+            x.address_str_to(mac);
+            char line[64];
+            snprintf(line, sizeof(line), "%s %.*s %ddBm", mac, (int) std::min<size_t>(name.size(), 20),
+                     name.c_str(), x.get_rssi());
+            id(bms_found)[std::string(mac)] = std::string(line);
+
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          std::string out;
+          for (auto &kv : id(bms_found)) {
+            if (!out.empty()) out += "; ";
+            out += kv.second;
+          }
+          if (out.empty()) out = "none";
+          if (out.size() > 250) out = out.substr(0, 250);
+          id(bms_found_text).publish_state(out);
+          id(bms_found).clear();
+
+text_sensor:
+  - platform: template
+    id: bms_found_text
+    name: "BMS Found Devices"
+    icon: mdi:bluetooth-audio
+    entity_category: diagnostic

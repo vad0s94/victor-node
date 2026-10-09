@@ -14,6 +14,8 @@ name="${cfg%.yaml}"
 
 args=()
 [ -n "${JK_BMS_SOURCE:-}" ] && args+=(-s jk_bms_source "$JK_BMS_SOURCE")
+[ -n "${DALY_BMS_SOURCE:-}" ] && args+=(-s daly_bms_source "$DALY_BMS_SOURCE")
+[ -n "${JBD_BMS_SOURCE:-}" ] && args+=(-s jbd_bms_source "$JBD_BMS_SOURCE")
 
 ESPHOME_BIN="../.venv/bin/esphome"
 [ -x "$ESPHOME_BIN" ] || ESPHOME_BIN="esphome"

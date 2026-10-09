@@ -1,11 +1,11 @@
-# Home Assistant package for the Victor remote node (Дача).
+# Home Assistant package for the Victor remote node (СЕС).
 #
 # Install: copy to /config/packages/victor.yaml and make sure configuration.yaml has
 #   homeassistant:
 #     packages: !include_dir_named packages
 #
 # Notifications go to notify.all_devices (already defined in notifications.yaml).
-# To also notify the relative, add their mobile_app notifier to that group or
+# To also notify people on site, add their mobile_app notifier to that group or
 # duplicate the action with notify.mobile_app_<their_phone>.
 #
 # Entity ids assume the node name "victor" with discovery_object_id_generator:
@@ -14,7 +14,7 @@
 
 automation:
   - id: victor_node_offline
-    alias: "Дача: вузол офлайн"
+    alias: "СЕС: вузол офлайн"
     mode: single
     triggers:
       - trigger: state
@@ -24,11 +24,11 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача"
+          title: "СЕС"
           message: "Блок моніторингу не на зв'язку вже 10 хв (немає Wi-Fi, інтернету або живлення)."
 
   - id: victor_node_online
-    alias: "Дача: вузол знову онлайн"
+    alias: "СЕС: вузол знову онлайн"
     mode: single
     triggers:
       - trigger: state
@@ -39,11 +39,11 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача"
+          title: "СЕС"
           message: "Блок моніторингу знову на зв'язку."
 
   - id: victor_soc_low
-    alias: "Дача: батарея розряджена"
+    alias: "СЕС: батарея розряджена"
     mode: single
     triggers:
       - trigger: numeric_state
@@ -53,11 +53,11 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача"
+          title: "СЕС"
           message: "Заряд батареї {{ states('sensor.victor_bms_state_of_charge') | int(0) }}%."
 
   - id: victor_grid_lost
-    alias: "Дача: зникла мережа"
+    alias: "СЕС: зникла мережа"
     mode: single
     triggers:
       - trigger: state
@@ -68,11 +68,11 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача"
+          title: "СЕС"
           message: "Зникла мережа, працюємо від батареї ({{ states('sensor.victor_bms_state_of_charge') | int(0) }}%)."
 
   - id: victor_grid_back
-    alias: "Дача: мережа повернулась"
+    alias: "СЕС: мережа повернулась"
     mode: single
     triggers:
       - trigger: state
@@ -83,11 +83,11 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача"
+          title: "СЕС"
           message: "Мережа повернулась."
 
   - id: victor_inverter_errors
-    alias: "Дача: помилка інвертора"
+    alias: "СЕС: помилка інвертора"
     mode: single
     triggers:
       - trigger: state
@@ -98,11 +98,11 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача: інвертор"
+          title: "СЕС: інвертор"
           message: "Помилка інвертора: {{ trigger.to_state.state }}"
 
   - id: victor_bms_errors
-    alias: "Дача: помилка BMS"
+    alias: "СЕС: помилка BMS"
     mode: single
     triggers:
       - trigger: state
@@ -115,11 +115,11 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача: BMS"
+          title: "СЕС: BMS"
           message: "BMS повідомляє: {{ trigger.to_state.state }}"
 
   - id: victor_link_lost
-    alias: "Дача: немає зв'язку з інвертором або BMS"
+    alias: "СЕС: немає зв'язку з інвертором або BMS"
     mode: single
     triggers:
       - trigger: state
@@ -135,7 +135,7 @@ automation:
     actions:
       - action: notify.all_devices
         data:
-          title: "Дача"
+          title: "СЕС"
           message: >
             {{ 'Блок не чує інвертор (кабель RJ45?)' if trigger.id == 'inverter'
                else 'Блок не бачить BMS по Bluetooth' }} вже 5 хв.

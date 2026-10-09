@@ -11,7 +11,7 @@ tools/mqtt-sub.sh 'victor/node/#' 30             # чи йдуть дані вз
 | Симптом | Ймовірна причина | Що робити |
 |---|---|---|
 | `bridge/state` = 0 або порожньо | Mosquitto не підключився до flespi | Settings → Add-ons → Mosquitto → Log. Неправильний токен `home-bridge`, токен прострочений, або вимкнено `customize`. `tools/ha-enable-bridge.sh` ще раз |
-| Міст 1, вузол `offline`, у flespi сесії `victor-node` немає | На дачі немає світла / Wi-Fi / інтернету | Спитати про світлодіод ([onsite-uk.md](onsite-uk.md)). Швидке блимання = Wi-Fi: через «Victor Setup» |
+| Міст 1, вузол `offline`, у flespi сесії `victor-node` немає | На об'єкті немає світла / Wi-Fi / інтернету | Спитати про світлодіод ([onsite-uk.md](onsite-uk.md)). Швидке блимання = Wi-Fi: через «Victor Setup» |
 | Вузол online, сутностей в HA немає | Discovery не дійшов | Перезапустити HA (він шле `homeassistant/status`, міст передає, вузол перевідправляє discovery). Перевірити `tools/mqtt-sub.sh 'homeassistant/+/victor/#' 20` |
 | `Inverter Link` = off | Не той протокол / TX-RX навпаки / кабель | [firmware.md](firmware.md) → «Якщо Victor не відповідає» |
 | Дані є, зміни налаштувань не застосовуються | Інвертор хоче Modbus 0x10 | `modbus_write_multiple: "true"`, зібрати, `tools/ota-remote.sh` |
@@ -19,7 +19,7 @@ tools/mqtt-sub.sh 'victor/node/#' 30             # чи йдуть дані вз
 | Енергія за день стрибнула в нуль | Перезавантаження після >5 хв без збереження | Норма: втрачаються максимум останні 5 хв. Довгострокова статистика HA не ламається |
 | Правило не спрацьовує | Вимкнене, немає свіжих даних BMS чи зв'язку з інвертором, або 5-хв пауза між записами | `sensor.victor_rules_last_action`, `binary_sensor.victor_bms_online_status`, `binary_sensor.victor_inverter_link` |
 | Акаунт flespi зник | 60 днів без входу в панель (умова Free) | Створити заново, нові токени, `secrets.yaml` + OTA, `ha-enable-bridge.sh`. Заходити в панель раз на місяць |
-| Після OTA вузол не повернувся | Новий образ не стартує | Почекати ~10 хв: `safe_mode` повертає попередню прошивку. Якщо ні — родич перезапускає живлення (вийняти RJ45 на 10 с) |
+| Після OTA вузол не повернувся | Новий образ не стартує | Почекати ~10 хв: `safe_mode` повертає попередню прошивку. Якщо ні — перезапустити живлення на місці (вийняти RJ45 на 10 с) |
 
 ## Заміна токенів flespi
 1. Створити нові токени (`victor-node`, `home-bridge`), старі видалити.

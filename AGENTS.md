@@ -17,13 +17,13 @@ Modular ESPHome firmware + Home Assistant config to monitor and control off-grid
 3. Do not commit or push unless the owner asks. Never put secrets in git (`esphome/secrets.yaml` is ignored).
 4. Inverter settings live in EEPROM: never write in tight loops; write only when the value differs; rules keep a 5 min per-setting gap.
 5. Don't run anything that changes the home HA (bridge install, add-on restart, file writes) without the owner's explicit go-ahead. A Mosquitto restart drops every MQTT device at home for ~10 s.
-6. The relative on site is non-technical: anything they must do goes into docs/onsite-uk.md, in plain Ukrainian.
+6. The person on site may be non-technical: anything they must do goes into docs/onsite-uk.md, in plain Ukrainian.
 
 ## Layout
 ```
 esphome/
-  victor.yaml           owner's dacha node: Modbus 2341 + JK BMS + rules + flespi
-  victor-pi30.yaml      owner's home SP-3200 (PI30) prototype
+  victor.yaml           production node: Modbus 2341 + JK BMS + rules + flespi
+  victor-pi30.yaml      Voltronic PI30 test / deployment profile
   victor-probe.yaml     protocol finder (Travis90x sweep), logs over MQTT
   powmr-jk-api.yaml     open preset: PowMr + JK BMS + Native HA API
   powmr-jk-mqtt.yaml    open preset: PowMr + JK BMS + Universal MQTT
@@ -40,7 +40,7 @@ mosquitto/
   flespi-bridge.conf              owner's flespi bridge config
 homeassistant/
   packages/victor.yaml            notifications package
-  dashboards/dacha.yaml           dashboard (sunsynk-power-flow-card, jk-bms-card)
+  dashboards/solar.yaml           dashboard (sunsynk-power-flow-card, jk-bms-card)
 tools/
   constructor.py        interactive wizard & CLI configuration generator
   build.sh              cross-platform build script (.factory.bin, .ota.bin, .md5)

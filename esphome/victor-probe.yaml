@@ -15,7 +15,7 @@
 substitutions:
   node_name: victor
   friendly_name: Victor
-  area: "Дача"
+  area: "СЕС"
   board: esp32dev
   led_pin: GPIO2
   mqtt_prefix: victor/node

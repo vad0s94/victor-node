@@ -1,5 +1,5 @@
 # Remote firmware update over the internet: the node downloads a firmware
-# image from an HTTPS URL. Used when the node is 300 km away and only reachable
+# image from an HTTPS URL. Used when the node is installed at a remote site and only reachable
 # through the cloud broker. tools/ota-remote.sh sets the URL/MD5 and presses
 # the button via MQTT.
 #

@@ -20,8 +20,15 @@ jobs:
         target:
           - powmr-jk-api
           - powmr-jk-mqtt
+          - powmr-2xjk-api
+          - powmr-daly-api
+          - powmr-2xdaly-api
+          - powmr-jbd-api
+          - powmr-2xjbd-api
           - powmr-nobms-api
           - voltronic-jk-api
+          - voltronic-daly-api
+          - voltronic-jbd-api
           - voltronic-nobms-api
           - victor-probe
     steps:
@@ -41,17 +48,29 @@ jobs:
 
       - name: Fetch reference upstream components
         run: |
-          mkdir -p tools/ref/jk-src
+          mkdir -p tools/ref/jk-src tools/ref/daly-src tools/ref/jbd-src
           curl -sSL "https://codeload.github.com/syssi/esphome-jk-bms/tar.gz/59c994e726c34b123e43eb0090736fd94706f0db" \
             | tar -xz -C tools/ref/jk-src --strip-components=1
+          curl -sSL "https://codeload.github.com/syssi/esphome-daly-bms/tar.gz/ebfe3a7be3fae1e1808f3244a2d68e9b5eabf8ff" \
+            | tar -xz -C tools/ref/daly-src --strip-components=1
+          curl -sSL "https://codeload.github.com/syssi/esphome-jbd-bms/tar.gz/f70ad25b0a5bf67e29c91461ab1fccbb4ba30f58" \
+            | tar -xz -C tools/ref/jbd-src --strip-components=1
 
       - name: Prepare secrets
         run: |
           cp esphome/secrets.example.yaml esphome/secrets.yaml
 
+      - name: Prepare configuration
+        run: |
+          if [ ! -f "esphome/${{ matrix.target }}.yaml" ]; then
+            python3 tools/constructor.py --preset "${{ matrix.target }}" -o "esphome/${{ matrix.target }}.yaml"
+          fi
+
       - name: Compile firmware target
         env:
           JK_BMS_SOURCE: ../tools/ref/jk-src/components
+          DALY_BMS_SOURCE: ../tools/ref/daly-src/components
+          JBD_BMS_SOURCE: ../tools/ref/jbd-src/components
         run: |
           tools/build.sh ${{ matrix.target }}.yaml
 

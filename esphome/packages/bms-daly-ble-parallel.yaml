@@ -1,0 +1,325 @@
+# 2x Daly BMS over Bluetooth Low Energy (Parallel Battery Bank Setup)
+#
+# Connects to 2 parallel Daly BMSs concurrently (Pack 1 and Pack 2) and aggregates them
+# via bms-parallel-aggregator.yaml into unified bms_* entities for rules & dashboards.
+#
+# Both BMS MAC addresses are configurable at runtime from Home Assistant:
+#   - "BMS 1 MAC" (text.victor_bms_1_mac)
+#   - "BMS 2 MAC" (text.victor_bms_2_mac)
+#
+# Expects substitutions: daly_bms_source, bms1_default_mac, bms2_default_mac,
+# bms_password, bms_status_registers, bms_throttle.
+
+packages:
+  ble_common: !include bms-ble-common.yaml
+  aggregator: !include bms-parallel-aggregator.yaml
+
+external_components:
+  - source: ${daly_bms_source}
+    components: [daly_bms_ble]
+
+esphome:
+  on_boot:
+    - priority: -100
+      then:
+        - script.execute: bms1_apply_mac
+        - script.execute: bms2_apply_mac
+
+.ble_client_defaults: &ble_client_defaults
+  auto_connect: true
+
+ble_client:
+  - id: bms1_client
+    mac_address: ${bms1_default_mac}
+    <<: *ble_client_defaults
+  - id: bms2_client
+    mac_address: ${bms2_default_mac}
+    <<: *ble_client_defaults
+
+.daly_bms_defaults: &daly_bms_defaults
+  password: ${bms_password}
+  status_registers: ${bms_status_registers}
+  update_interval: ${bms_throttle}
+
+daly_bms_ble:
+  - id: bms1
+    ble_client_id: bms1_client
+    <<: *daly_bms_defaults
+  - id: bms2
+    ble_client_id: bms2_client
+    <<: *daly_bms_defaults
+
+script:
+  - id: bms1_apply_mac
+    mode: queued
+    then:
+      - lambda: |-
+          const std::string &s = id(bms1_mac).state;
+          uint64_t mac = 0;
+          int digits = 0;
+          for (char c : s) {
+            int v;
+            if (c >= '0' && c <= '9') v = c - '0';
+            else if (c >= 'a' && c <= 'f') v = c - 'a' + 10;
+            else if (c >= 'A' && c <= 'F') v = c - 'A' + 10;
+            else continue;
+            mac = (mac << 4) | v;
+            digits++;
+          }
+          if (digits != 12) {
+            ESP_LOGI("bms", "BMS 1 MAC not set at runtime, using firmware default");
+            return;
+          }
+          ESP_LOGW("bms", "Switching Daly BMS 1 to %s", s.c_str());
+          id(bms1_client).set_enabled(false);
+          id(bms1_client).set_address(mac);
+          id(bms1_client).set_enabled(true);
+
+  - id: bms2_apply_mac
+    mode: queued
+    then:
+      - lambda: |-
+          const std::string &s = id(bms2_mac).state;
+          uint64_t mac = 0;
+          int digits = 0;
+          for (char c : s) {
+            int v;
+            if (c >= '0' && c <= '9') v = c - '0';
+            else if (c >= 'a' && c <= 'f') v = c - 'a' + 10;
+            else if (c >= 'A' && c <= 'F') v = c - 'A' + 10;
+            else continue;
+            mac = (mac << 4) | v;
+            digits++;
+          }
+          if (digits != 12) {
+            ESP_LOGI("bms", "BMS 2 MAC not set at runtime, using firmware default");
+            return;
+          }
+          ESP_LOGW("bms", "Switching Daly BMS 2 to %s", s.c_str());
+          id(bms2_client).set_enabled(false);
+          id(bms2_client).set_address(mac);
+          id(bms2_client).set_enabled(true);
+
+.mac_text: &mac_text
+  icon: mdi:bluetooth-settings
+  entity_category: config
+  mode: text
+  min_length: 0
+  max_length: 17
+  optimistic: true
+  restore_value: true
+  initial_value: ""
+
+text:
+  - platform: template
+    id: bms1_mac
+    name: "BMS 1 MAC"
+    <<: *mac_text
+    on_value:
+      - script.execute: bms1_apply_mac
+  - platform: template
+    id: bms2_mac
+    name: "BMS 2 MAC"
+    <<: *mac_text
+    on_value:
+      - script.execute: bms2_apply_mac
+
+binary_sensor:
+  - platform: daly_bms_ble
+    daly_bms_ble_id: bms1
+    online_status:
+      id: bms1_online
+      name: "BMS 1 Online Status"
+    balancing:
+      name: "BMS 1 Balancing"
+    charging:
+      name: "BMS 1 Charging"
+    discharging:
+      name: "BMS 1 Discharging"
+
+  - platform: daly_bms_ble
+    daly_bms_ble_id: bms2
+    online_status:
+      id: bms2_online
+      name: "BMS 2 Online Status"
+    balancing:
+      name: "BMS 2 Balancing"
+    charging:
+      name: "BMS 2 Charging"
+    discharging:
+      name: "BMS 2 Discharging"
+
+switch:
+  - platform: ble_client
+    ble_client_id: bms1_client
+    id: bms1_ble_switch
+    name: "BMS 1 Bluetooth Connection"
+    icon: mdi:bluetooth-connect
+  - platform: ble_client
+    ble_client_id: bms2_client
+    id: bms2_ble_switch
+    name: "BMS 2 Bluetooth Connection"
+    icon: mdi:bluetooth-connect
+
+button:
+  - platform: daly_bms_ble
+    daly_bms_ble_id: bms1
+    retrieve_settings:
+      name: "BMS 1 Retrieve Settings"
+    retrieve_version:
+      name: "BMS 1 Retrieve Version"
+  - platform: daly_bms_ble
+    daly_bms_ble_id: bms2
+    retrieve_settings:
+      name: "BMS 2 Retrieve Settings"
+    retrieve_version:
+      name: "BMS 2 Retrieve Version"
+
+sensor:
+  - platform: daly_bms_ble
+    daly_bms_ble_id: bms1
+    state_of_charge:
+      id: bms1_soc
+      name: "BMS 1 State Of Charge"
+    total_voltage:
+      id: bms1_total_voltage
+      name: "BMS 1 Total Voltage"
+    current:
+      id: bms1_current
+      name: "BMS 1 Current"
+    power:
+      id: bms1_power
+      name: "BMS 1 Power"
+    charging_power:
+      id: bms1_charging_power
+      name: "BMS 1 Charging Power"
+    discharging_power:
+      id: bms1_discharging_power
+      name: "BMS 1 Discharging Power"
+    capacity_remaining:
+      name: "BMS 1 Capacity Remaining"
+    charging_cycles:
+      name: "BMS 1 Charging Cycles"
+    min_cell_voltage:
+      id: bms1_min_cell_voltage
+      name: "BMS 1 Min Cell Voltage"
+    max_cell_voltage:
+      id: bms1_max_cell_voltage
+      name: "BMS 1 Max Cell Voltage"
+    delta_cell_voltage:
+      id: bms1_delta_cell_voltage
+      name: "BMS 1 Delta Cell Voltage"
+    average_cell_voltage:
+      name: "BMS 1 Average Cell Voltage"
+    temperature_1:
+      name: "BMS 1 Temperature Sensor 1"
+    temperature_2:
+      name: "BMS 1 Temperature Sensor 2"
+    mosfet_temperature:
+      name: "BMS 1 Mosfet Temperature"
+    cell_voltage_1:
+      name: "BMS 1 Cell Voltage 1"
+    cell_voltage_2:
+      name: "BMS 1 Cell Voltage 2"
+    cell_voltage_3:
+      name: "BMS 1 Cell Voltage 3"
+    cell_voltage_4:
+      name: "BMS 1 Cell Voltage 4"
+    cell_voltage_5:
+      name: "BMS 1 Cell Voltage 5"
+    cell_voltage_6:
+      name: "BMS 1 Cell Voltage 6"
+    cell_voltage_7:
+      name: "BMS 1 Cell Voltage 7"
+    cell_voltage_8:
+      name: "BMS 1 Cell Voltage 8"
+    cell_voltage_9:
+      name: "BMS 1 Cell Voltage 9"
+    cell_voltage_10:
+      name: "BMS 1 Cell Voltage 10"
+    cell_voltage_11:
+      name: "BMS 1 Cell Voltage 11"
+    cell_voltage_12:
+      name: "BMS 1 Cell Voltage 12"
+    cell_voltage_13:
+      name: "BMS 1 Cell Voltage 13"
+    cell_voltage_14:
+      name: "BMS 1 Cell Voltage 14"
+    cell_voltage_15:
+      name: "BMS 1 Cell Voltage 15"
+    cell_voltage_16:
+      name: "BMS 1 Cell Voltage 16"
+
+  - platform: daly_bms_ble
+    daly_bms_ble_id: bms2
+    state_of_charge:
+      id: bms2_soc
+      name: "BMS 2 State Of Charge"
+    total_voltage:
+      id: bms2_total_voltage
+      name: "BMS 2 Total Voltage"
+    current:
+      id: bms2_current
+      name: "BMS 2 Current"
+    power:
+      id: bms2_power
+      name: "BMS 2 Power"
+    charging_power:
+      id: bms2_charging_power
+      name: "BMS 2 Charging Power"
+    discharging_power:
+      id: bms2_discharging_power
+      name: "BMS 2 Discharging Power"
+    capacity_remaining:
+      name: "BMS 2 Capacity Remaining"
+    charging_cycles:
+      name: "BMS 2 Charging Cycles"
+    min_cell_voltage:
+      id: bms2_min_cell_voltage
+      name: "BMS 2 Min Cell Voltage"
+    max_cell_voltage:
+      id: bms2_max_cell_voltage
+      name: "BMS 2 Max Cell Voltage"
+    delta_cell_voltage:
+      id: bms2_delta_cell_voltage
+      name: "BMS 2 Delta Cell Voltage"
+    average_cell_voltage:
+      name: "BMS 2 Average Cell Voltage"
+    temperature_1:
+      name: "BMS 2 Temperature Sensor 1"
+    temperature_2:
+      name: "BMS 2 Temperature Sensor 2"
+    mosfet_temperature:
+      name: "BMS 2 Mosfet Temperature"
+    cell_voltage_1:
+      name: "BMS 2 Cell Voltage 1"
+    cell_voltage_2:
+      name: "BMS 2 Cell Voltage 2"
+    cell_voltage_3:
+      name: "BMS 2 Cell Voltage 3"
+    cell_voltage_4:
+      name: "BMS 2 Cell Voltage 4"
+    cell_voltage_5:
+      name: "BMS 2 Cell Voltage 5"
+    cell_voltage_6:
+      name: "BMS 2 Cell Voltage 6"
+    cell_voltage_7:
+      name: "BMS 2 Cell Voltage 7"
+    cell_voltage_8:
+      name: "BMS 2 Cell Voltage 8"
+    cell_voltage_9:
+      name: "BMS 2 Cell Voltage 9"
+    cell_voltage_10:
+      name: "BMS 2 Cell Voltage 10"
+    cell_voltage_11:
+      name: "BMS 2 Cell Voltage 11"
+    cell_voltage_12:
+      name: "BMS 2 Cell Voltage 12"
+    cell_voltage_13:
+      name: "BMS 2 Cell Voltage 13"
+    cell_voltage_14:
+      name: "BMS 2 Cell Voltage 14"
+    cell_voltage_15:
+      name: "BMS 2 Cell Voltage 15"
+    cell_voltage_16:
+      name: "BMS 2 Cell Voltage 16"
