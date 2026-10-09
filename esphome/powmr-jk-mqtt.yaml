@@ -9,7 +9,7 @@ substitutions:
   led_pin: GPIO2
 
   # MQTT Layout (compatible with any standard broker)
-  mqtt_broker: "192.168.1.100"       # IP or hostname of your MQTT broker
+  mqtt_broker: "homeassistant.local" # IP or hostname of your MQTT broker (auto-discovered on LAN)
   mqtt_port: "1883"                  # 1883 for plain, 8883 for TLS
   mqtt_username: ""                  # optional MQTT username
   mqtt_password: ""                  # optional MQTT password

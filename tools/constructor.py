@@ -116,7 +116,7 @@ def build_config(
     bms_packs=1,
     bms_protocol="JK02_32S",
     transport="mqtt",
-    mqtt_broker="192.168.1.100",
+    mqtt_broker="homeassistant.local",
     mqtt_port="1883",
     mqtt_username="",
     mqtt_password="",
@@ -307,12 +307,12 @@ def interactive_wizard():
     t_choice = input("Choice [1]: ").strip() or "1"
     transport = {"1": "mqtt", "2": "mqtt_tls", "3": "flespi"}.get(t_choice, "mqtt")
 
-    mqtt_broker = "192.168.1.100"
+    mqtt_broker = "homeassistant.local"
     mqtt_port = "1883"
     mqtt_username = ""
     mqtt_password = ""
     if transport in ("mqtt", "mqtt_tls"):
-        mqtt_broker = input("MQTT Broker host/IP [192.168.1.100]: ").strip() or "192.168.1.100"
+        mqtt_broker = input("MQTT Broker host/IP [homeassistant.local]: ").strip() or "homeassistant.local"
         default_port = "8883" if transport == "mqtt_tls" else "1883"
         mqtt_port = input(f"MQTT Port [{default_port}]: ").strip() or default_port
         mqtt_username = input("MQTT Username (optional): ").strip()
@@ -370,7 +370,7 @@ def main():
     parser.add_argument("--bms-packs", type=int, default=1, choices=[1], help="Number of battery packs (default: 1)")
     parser.add_argument("--bms-protocol", default="JK02_32S", choices=["JK02_32S", "JK02_24S"], help="JK BMS protocol")
     parser.add_argument("--transport", default="mqtt", choices=["mqtt", "mqtt_tls", "flespi"], help="MQTT Transport (default: mqtt)")
-    parser.add_argument("--mqtt-broker", default="192.168.1.100", help="MQTT broker host")
+    parser.add_argument("--mqtt-broker", default="homeassistant.local", help="MQTT broker host (default: homeassistant.local)")
     parser.add_argument("--mqtt-port", default="1883", help="MQTT broker port")
     parser.add_argument("--mqtt-username", default="", help="MQTT username")
     parser.add_argument("--mqtt-password", default="", help="MQTT password")

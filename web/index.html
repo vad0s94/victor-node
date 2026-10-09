@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Solar Inverter & BMS Gateway — Веб-інсталятор прошивки</title>
+  <title>Solar Inverter & BMS Gateway — Веб-інсталятор та Конструктор</title>
   <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
   <style>
     :root {
@@ -28,22 +28,60 @@
       justify-content: center;
     }
     .container {
-      max-width: 760px;
+      max-width: 820px;
       width: 100%;
     }
     header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
     }
     header h1 {
-      font-size: 1.85rem;
+      font-size: 1.95rem;
       font-weight: 700;
       color: #38bdf8;
       margin-bottom: 8px;
     }
     header p {
       color: var(--text-muted);
-      font-size: 1rem;
+      font-size: 1.02rem;
+    }
+    .tabs-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 12px;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+      background: #1e293b;
+    }
+    .tab-btn.active {
+      color: #38bdf8;
+      background: #0c2d48;
+      border-color: #0284c7;
+    }
+    .tab-pane {
+      display: none;
+    }
+    .tab-pane.active {
+      display: block;
     }
     .wizard-card {
       background: var(--card-bg);
@@ -111,6 +149,39 @@
       font-size: 0.8rem;
       color: var(--text-muted);
     }
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (min-width: 600px) {
+      .form-grid-2 { grid-template-columns: 1fr 1fr; }
+    }
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #cbd5e1;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
     .summary-box {
       background: #091322;
       border: 1px solid #1e3a5f;
@@ -147,6 +218,49 @@
       margin-top: 14px;
       display: none;
     }
+    .action-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+    .action-btn:hover { background: var(--primary-hover); }
+    .action-btn-secondary {
+      background: #334155;
+      color: white;
+    }
+    .action-btn-secondary:hover { background: #475569; }
+    .code-preview {
+      width: 100%;
+      height: 300px;
+      background: #091322;
+      border: 1px solid #1e3a5f;
+      border-radius: 8px;
+      color: #38bdf8;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.82rem;
+      padding: 12px;
+      resize: vertical;
+      line-height: 1.45;
+      margin: 12px 0;
+    }
+    .card-notice {
+      background: rgba(2, 132, 199, 0.1);
+      border: 1px solid rgba(2, 132, 199, 0.3);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin: 16px 0;
+      font-size: 0.9rem;
+    }
     .footer-notes {
       text-align: center;
       font-size: 0.8rem;
@@ -160,100 +274,302 @@
 
 <div class="container">
   <header>
-    <h1>Solar & BMS Gateway Installer</h1>
-    <p>Інтерактивний майстер вибору та прошивки ESP32 прямо з браузера</p>
+    <h1>Solar & BMS Gateway</h1>
+    <p>Веб-інсталятор, Онлайн-Конструктор та центр конфігурації ESP32</p>
   </header>
 
-  <div class="wizard-card">
-    <!-- Крок 1: Інвертор -->
-    <div class="step-title">
-      <span class="step-badge">1</span> Який у вас інвертор?
-    </div>
-    <div class="options-grid" id="inverter-options">
-      <div class="option-btn selected" data-value="powmr">
-        <span class="option-title">PowMr / Victor / SmartESS</span>
-        <span class="option-desc">Modbus RTU 2341 (POW-HVM, NM-ECO PLUS, EASun)</span>
-      </div>
-      <div class="option-btn" data-value="voltronic">
-        <span class="option-title">Voltronic / Axpert / EASun</span>
-        <span class="option-desc">Протокол PI30 / Q-команди (SP-3200, MPP Solar)</span>
-      </div>
-    </div>
+  <!-- Навігація вкладок -->
+  <div class="tabs-nav">
+    <button type="button" class="tab-btn active" data-tab="tab-flash">
+      ⚡ Прошивка в 1 клік
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-constructor">
+      ⚙️ Онлайн-Конструктор YAML
+    </button>
+    <button type="button" class="tab-btn" data-tab="tab-local-ui">
+      🌐 Локальний Веб-інтерфейс ESP32
+    </button>
+  </div>
 
-    <!-- Крок 2: BMS та акумуляторні збірки -->
-    <div class="step-title">
-      <span class="step-badge">2</span> Акумулятор та тип BMS
-    </div>
-    <div class="options-grid" id="bms-options">
-      <div class="option-btn selected" data-value="jk">
-        <span class="option-title">JK BMS (BLE)</span>
-        <span class="option-desc">Повний моніторинг кожної комірки (1..16S/24S), балансир по BLE</span>
+  <!-- ВКЛАДКА 1: Прошивка через USB -->
+  <div class="tab-pane active" id="tab-flash">
+    <div class="wizard-card">
+      <!-- Крок 1: Інвертор -->
+      <div class="step-title">
+        <span class="step-badge">1</span> Який у вас інвертор?
       </div>
-      <div class="option-btn" data-value="daly">
-        <span class="option-title">Daly Smart BMS (BLE)</span>
-        <span class="option-desc">Daly Smart BMS (Blue/standard), напруги, струм, температури</span>
+      <div class="options-grid" id="inverter-options">
+        <div class="option-btn selected" data-value="powmr">
+          <span class="option-title">PowMr / Victor / SmartESS</span>
+          <span class="option-desc">Modbus RTU 2341 (POW-HVM, NM-ECO PLUS, EASun)</span>
+        </div>
+        <div class="option-btn" data-value="voltronic">
+          <span class="option-title">Voltronic / Axpert / EASun</span>
+          <span class="option-desc">Протокол PI30 / Q-команди (SP-3200, MPP Solar)</span>
+        </div>
       </div>
-      <div class="option-btn" data-value="jbd">
-        <span class="option-title">JBD / Xiaoxiang (BLE)</span>
-        <span class="option-desc">Liontron, Overkill Solar, JBD BLE (комірки, ключі, SoC)</span>
-      </div>
-      <div class="option-btn" data-value="none">
-        <span class="option-title">Без BMS (тільки інвертор)</span>
-        <span class="option-desc">Легка прошивка без Bluetooth для моніторингу інвертора</span>
-      </div>
-    </div>
 
-    <!-- Пошук Bluetooth BMS -->
-    <div style="margin: 14px 0 22px; padding: 14px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
-      <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-        <span>🔍 Пошук Bluetooth BMS в ефірі</span>
-        <span style="font-size: 11px; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px;">Новинка</span>
+      <!-- Крок 2: BMS та акумуляторні збірки -->
+      <div class="step-title">
+        <span class="step-badge">2</span> Акумулятор та тип BMS
       </div>
-      <p style="font-size: 13px; color: #64748b; margin-bottom: 10px; line-height: 1.4;">
-        Після прошивки ESP32 сам сканує BLE-ефір і дозволяє підключити знайдену BMS в 1 клік у веб-інтерфейсі чи Home Assistant.
-        Ви також можете перевірити наявність сигналу вашої батареї прямо зараз у браузері:
-      </p>
-      <button type="button" id="scan-ble-btn" style="background: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-        <span>📡 Сканувати Bluetooth BMS поруч</span>
-      </button>
-      <div id="ble-scan-result" style="margin-top: 10px; font-size: 13px; display: none;"></div>
-    </div>
+      <div class="options-grid" id="bms-options">
+        <div class="option-btn selected" data-value="jk">
+          <span class="option-title">JK BMS (BLE)</span>
+          <span class="option-desc">Повний моніторинг кожної комірки (1..16S/24S), балансир по BLE</span>
+        </div>
+        <div class="option-btn" data-value="daly">
+          <span class="option-title">Daly Smart BMS (BLE)</span>
+          <span class="option-desc">Daly Smart BMS (Blue/standard), напруги, струм, температури</span>
+        </div>
+        <div class="option-btn" data-value="jbd">
+          <span class="option-title">JBD / Xiaoxiang (BLE)</span>
+          <span class="option-desc">Liontron, Overkill Solar, JBD BLE (комірки, ключі, SoC)</span>
+        </div>
+        <div class="option-btn" data-value="none">
+          <span class="option-title">Без BMS (тільки інвертор)</span>
+          <span class="option-desc">Легка прошивка без Bluetooth для моніторингу інвертора</span>
+        </div>
+      </div>
 
-    <!-- Крок 3: MQTT Брокер -->
-    <div class="step-title">
-      <span class="step-badge">3</span> Підключення по MQTT
-    </div>
-    <div class="options-grid" id="transport-options">
-      <div class="option-btn selected" data-value="mqtt">
-        <span class="option-title">Локальний MQTT (Рекомендовано)</span>
-        <span class="option-desc">Локальний Mosquitto / EMQX брокер у вашій мережі (порт 1883)</span>
-      </div>
-      <div class="option-btn" data-value="mqtt_tls">
-        <span class="option-title">Віддалений MQTT (TLS)</span>
-        <span class="option-desc">Хмарний брокер або віддалений сервер через захищене TLS з'єднання (порт 8883)</span>
-      </div>
-    </div>
-
-    <!-- Підсумок конфігурації -->
-    <div class="summary-box">
-      <div class="summary-title" id="summary-title">Обрано: PowMr / Victor + JK BMS (Локальний MQTT)</div>
-      <div class="summary-desc" id="summary-desc">
-        Повний комплект: зчитування даних інвертора по RS232, зчитування напруг кожної комірки батареї по Bluetooth,
-        автоматичні правила захисту акумулятора за SOC на борту ESP32, публікація даних у MQTT.
-      </div>
-    </div>
-
-    <!-- Кнопка прошивки -->
-    <div class="install-area">
-      <esp-web-install-button id="install-btn" manifest="manifests/manifest-powmr-jk-mqtt.json">
-        <button slot="activate" style="background:#0284c7;color:white;padding:12px 28px;border:none;border-radius:10px;font-size:1.05rem;font-weight:600;cursor:pointer;">
-          ПРОШИТИ ЧЕРЕЗ USB (В ОДИН КЛІК)
+      <!-- Пошук Bluetooth BMS -->
+      <div style="margin: 14px 0 22px; padding: 14px 16px; background: #0c1929; border: 1px dashed #1e3a5f; border-radius: 10px;">
+        <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+          <span>🔍 Перевірка Bluetooth сигналу BMS</span>
+          <span style="font-size: 11px; background: #0284c7; color: white; padding: 2px 6px; border-radius: 4px;">Web BLE</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.4;">
+          Після прошивки ESP32 сам сканує BLE-ефір і дозволяє підключити знайдену BMS в 1 клік у локальному веб-інтерфейсі чи Home Assistant.
+          Ви також можете перевірити видимість вашої батареї прямо зараз у браузері:
+        </p>
+        <button type="button" id="scan-ble-btn" class="action-btn">
+          <span>📡 Сканувати Bluetooth BMS поруч</span>
         </button>
-      </esp-web-install-button>
+        <div id="ble-scan-result" style="margin-top: 10px; font-size: 13px; display: none;"></div>
+      </div>
 
-      <div class="compat-warning" id="compat-warning">
-        Ваш браузер не підтримує Web Serial API. Для прошивки в один клік відкрийте цю сторінку в
-        <strong>Google Chrome</strong> або <strong>Microsoft Edge</strong> на комп'ютері чи Android-смартфоні.
+      <!-- Крок 3: MQTT Брокер -->
+      <div class="step-title">
+        <span class="step-badge">3</span> Підключення по MQTT
+      </div>
+      <div class="options-grid" id="transport-options">
+        <div class="option-btn selected" data-value="mqtt">
+          <span class="option-title">Локальний MQTT (Рекомендовано)</span>
+          <span class="option-desc">Авто-підключення до <code>homeassistant.local:1883</code> або налаштування у веб-інтерфейсі</span>
+        </div>
+        <div class="option-btn" data-value="mqtt_tls">
+          <span class="option-title">Віддалений MQTT (TLS)</span>
+          <span class="option-desc">Хмарний брокер або віддалений сервер через захищене TLS з'єднання (порт 8883)</span>
+        </div>
+      </div>
+
+      <!-- Підказка про локальну конфігурацію -->
+      <div class="card-notice">
+        <div style="font-weight: 600; color: #38bdf8; margin-bottom: 4px;">💡 Повна конфігурація у локальному вебінтерфейсі пристрою:</div>
+        <div style="color: #cbd5e1; font-size: 0.85rem; line-height: 1.5;">
+          Прошитий пристрій за замовчуванням автоматично шукає брокер <code>homeassistant.local:1883</code>.<br>
+          Якщо у вашого брокера інша IP-адреса чи потрібен пароль — після прошивки відкрийте адресу пристрою у браузері <strong><code>http://&lt;ip-адреса-esp32&gt;/</code></strong>.
+          Там доступні поля введення MQTT, кнопки підключення BMS в 1 клік, струми заряду та правила!
+        </div>
+      </div>
+
+      <!-- Підсумок конфігурації -->
+      <div class="summary-box">
+        <div class="summary-title" id="summary-title">Обрано: PowMr / Victor + JK BMS (Локальний MQTT)</div>
+        <div class="summary-desc" id="summary-desc">
+          Повний комплект: зчитування даних інвертора по RS232, зчитування напруг кожної комірки батареї по Bluetooth,
+          автоматичні правила захисту акумулятора за SOC на борту ESP32, публікація даних у MQTT.
+        </div>
+      </div>
+
+      <!-- Кнопка прошивки -->
+      <div class="install-area">
+        <esp-web-install-button id="install-btn" manifest="manifests/manifest-powmr-jk-mqtt.json">
+          <button slot="activate" style="background:#0284c7;color:white;padding:12px 28px;border:none;border-radius:10px;font-size:1.05rem;font-weight:600;cursor:pointer;">
+            ПРОШИТИ ЧЕРЕЗ USB (В ОДИН КЛІК)
+          </button>
+        </esp-web-install-button>
+
+        <div class="compat-warning" id="compat-warning">
+          Ваш браузер не підтримує Web Serial API. Для прошивки в один клік відкрийте цю сторінку в
+          <strong>Google Chrome</strong> або <strong>Microsoft Edge</strong> на комп'ютері чи Android-смартфоні.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 2: Онлайн-Конструктор YAML -->
+  <div class="tab-pane" id="tab-constructor">
+    <div class="wizard-card">
+      <div class="step-title">
+        <span class="step-badge">⚙️</span> Параметри вашої конфігурації
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 18px;">
+        Введіть параметри вашого інвертора, плати та MQTT брокера. Браузер згенерує персональний файл конфігурації на льоту!
+      </p>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="cfg-node-name">Назва пристрою (node_name):</label>
+          <input type="text" id="cfg-node-name" class="form-input" value="solar-node" placeholder="solar-node">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfg-friendly-name">Дружнє ім'я (friendly_name):</label>
+          <input type="text" id="cfg-friendly-name" class="form-input" value="Solar Inverter" placeholder="Solar Inverter">
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="cfg-inverter">Тип інвертора:</label>
+          <select id="cfg-inverter" class="form-select">
+            <option value="powmr_2341" selected>PowMr / Victor (Modbus RTU 2341)</option>
+            <option value="pi30">Voltronic / Axpert / EASun (PI30 protocol)</option>
+            <option value="probe">Protocol Diagnostic Scanner (Probe)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfg-bms">Тип BMS акумулятора:</label>
+          <select id="cfg-bms" class="form-select">
+            <option value="jk_ble" selected>JK BMS (BLE, активний балансир)</option>
+            <option value="daly_ble">Daly Smart BMS (BLE)</option>
+            <option value="jbd_ble">JBD / Xiaoxiang BMS (BLE)</option>
+            <option value="none">Без BMS (Тільки моніторинг інвертора)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="cfg-board">Плата мікроконтролера:</label>
+          <select id="cfg-board" class="form-select">
+            <option value="esp32dev" selected>ESP32-WROOM-32 / 32U (esp32dev)</option>
+            <option value="wemos_d1_mini32">Wemos D1 Mini ESP32 (wemos_d1_mini32)</option>
+            <option value="esp32-c3-devkitm-1">ESP32-C3 SuperMini / DevKit (esp32-c3-devkitm-1)</option>
+          </select>
+        </div>
+        <div class="form-group" id="cfg-jk-proto-group">
+          <label class="form-label" for="cfg-jk-proto">Протокол JK BMS:</label>
+          <select id="cfg-jk-proto" class="form-select">
+            <option value="JK02_32S" selected>JK02_32S (HW 11.x і новіші, рекомендовано)</option>
+            <option value="JK02_24S">JK02_24S (Старі плати, HW &lt; 11.x)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="cfg-tx-pin">RS232 TX Pin (ESP32):</label>
+          <input type="text" id="cfg-tx-pin" class="form-input" value="GPIO16">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfg-rx-pin">RS232 RX Pin (ESP32):</label>
+          <input type="text" id="cfg-rx-pin" class="form-input" value="GPIO17">
+        </div>
+      </div>
+
+      <div class="step-title" style="margin-top: 14px; font-size: 1.05rem;">
+        <span class="step-badge">📡</span> Налаштування вашого MQTT брокера
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="cfg-mqtt-broker">Хост або IP брокера:</label>
+          <input type="text" id="cfg-mqtt-broker" class="form-input" value="homeassistant.local" placeholder="homeassistant.local або 192.168.1.50">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfg-mqtt-port">MQTT Порт:</label>
+          <input type="number" id="cfg-mqtt-port" class="form-input" value="1883" placeholder="1883">
+        </div>
+      </div>
+
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="cfg-mqtt-user">MQTT Логін (опціонально):</label>
+          <input type="text" id="cfg-mqtt-user" class="form-input" value="" placeholder="homeassistant">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="cfg-mqtt-pass">MQTT Пароль (опціонально):</label>
+          <input type="password" id="cfg-mqtt-pass" class="form-input" value="" placeholder="••••••••">
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 18px; margin: 12px 0 16px; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+          <input type="checkbox" id="cfg-rules" checked>
+          <span>Автономні правила SOC на пристрої</span>
+        </label>
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.9rem; cursor: pointer;">
+          <input type="checkbox" id="cfg-temp">
+          <span>Датчик температури DS18B20 (GPIO4)</span>
+        </label>
+      </div>
+
+      <!-- Вікно згенерованого YAML -->
+      <label class="form-label" style="margin-top: 10px;">Згенерована конфігурація ESPHome YAML:</label>
+      <textarea id="cfg-yaml-output" class="code-preview" readonly></textarea>
+
+      <!-- Кнопки дій -->
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px;">
+        <button type="button" id="btn-download-yaml" class="action-btn">
+          📥 Завантажити .yaml
+        </button>
+        <button type="button" id="btn-copy-yaml" class="action-btn action-btn-secondary">
+          📋 Скопіювати конфіг
+        </button>
+        <a href="https://github.com/vad0s94/victor-node/actions/workflows/build-custom.yml" target="_blank" class="action-btn" style="background: #2563eb;">
+          🚀 Зібрати бінарник у GitHub Actions
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ВКЛАДКА 3: Локальний Веб-інтерфейс ESP32 -->
+  <div class="tab-pane" id="tab-local-ui">
+    <div class="wizard-card">
+      <div class="step-title">
+        <span class="step-badge">🌐</span> Локальна панель керування ESP32 (http://&lt;ip&gt;/)
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 16px; line-height: 1.5;">
+        Кожна прошивка містить повноцінний вбудований веб-сервер ESPHome v3. Після підключення плати до домашньої мережі вам доступна панель, де можна змінити будь-яке налаштування без перепрошивки!
+      </p>
+
+      <div style="background: #091322; border: 1px solid #1e3a5f; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+        <h3 style="color: #38bdf8; font-size: 1.05rem; margin-bottom: 10px;">Як увійти до локального вебінтерфейсу:</h3>
+        <ol style="padding-left: 20px; font-size: 0.9rem; color: #cbd5e1; line-height: 1.6;">
+          <li>Знайдіть IP-адресу плати в списку клієнтів вашого Wi-Fi роутера або відкрийте адресу <code>http://solar-node.local/</code>.</li>
+          <li>Браузер запитає логін і пароль (HTTP Digest):
+            <div style="margin: 6px 0; background: #0f172a; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 0.85rem;">
+              Логін: <strong>admin</strong><br>
+              Пароль: <strong>change-me</strong> (або встановлений у secrets.yaml)
+            </div>
+          </li>
+          <li>Перед вами відкриється сторінка з усіма сенсорами, перемикачами та налаштуваннями!</li>
+        </ol>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 16px;">
+        <div style="background: #0c1929; border: 1px solid #1e3a5f; border-radius: 10px; padding: 14px;">
+          <h4 style="color: #38bdf8; font-size: 0.95rem; margin-bottom: 6px;">📡 1. Динамічне налаштування MQTT брокера</h4>
+          <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5;">
+            Поля <code>MQTT Broker Host</code>, <code>MQTT Broker Port</code>, <code>MQTT Username</code>, <code>MQTT Password</code> доступні для редагування прямо на сторінці.
+            Введіть новий IP та натисніть кнопку <code>MQTT Reconnect Apply</code> — налаштування збережуться в енергонезалежну Flash-пам'ять ESP32 і пристрій миттєво перепідключиться.
+          </p>
+        </div>
+
+        <div style="background: #0c1929; border: 1px solid #1e3a5f; border-radius: 10px; padding: 14px;">
+          <h4 style="color: #38bdf8; font-size: 0.95rem; margin-bottom: 6px;">🔋 2. Вибір та підключення Bluetooth BMS в 1 клік</h4>
+          <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5;">
+            Блок постійно сканує ефір на наявність JK, Daly або JBD BMS. У вебінтерфейсі відображаються знайдені пристрої та кнопка <code>Connect Discovered BMS 1</code> або <code>Auto-Connect Nearest BMS</code>. Жодного ручного пошуку MAC-адрес!
+          </p>
+        </div>
+
+        <div style="background: #0c1929; border: 1px solid #1e3a5f; border-radius: 10px; padding: 14px;">
+          <h4 style="color: #38bdf8; font-size: 0.95rem; margin-bottom: 6px;">⚡ 3. Керування інвертором та захистом батареї</h4>
+          <p style="font-size: 0.85rem; color: #cbd5e1; line-height: 1.5;">
+            Прямо з браузера можна змінювати максимальний струм заряду (10A..80A), пріоритет джерела живлення (Solar-Utility-Battery), перемикати заряд/розряд BMS та активувати автономні правила контролю струму за рівнем заряду SOC.
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -265,10 +581,24 @@
 </div>
 
 <script>
+  // Перевірка підтримки Web Serial
   if (!('serial' in navigator)) {
-    document.getElementById('compat-warning').style.display = 'block';
+    const warn = document.getElementById('compat-warning');
+    if (warn) warn.style.display = 'block';
   }
 
+  // Перемикання вкладок
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const targetPane = document.getElementById(btn.dataset.tab);
+      if (targetPane) targetPane.classList.add('active');
+    });
+  });
+
+  // Логіка Вкладки 1 (Швидка прошивка)
   let selectedInverter = 'powmr';
   let selectedBms = 'jk';
   let selectedTransport = 'mqtt';
@@ -317,15 +647,18 @@
       }
     }
 
-    document.getElementById('summary-title').textContent = 'Обрано: ' + title;
-    document.getElementById('summary-desc').textContent = desc;
+    const titleEl = document.getElementById('summary-title');
+    const descEl = document.getElementById('summary-desc');
+    if (titleEl) titleEl.textContent = 'Обрано: ' + title;
+    if (descEl) descEl.textContent = desc;
 
     const btn = document.getElementById('install-btn');
-    btn.setAttribute('manifest', `manifests/manifest-${profile}.json`);
+    if (btn) btn.setAttribute('manifest', `manifests/manifest-${profile}.json`);
   }
 
   function bindOptions(containerId, callback) {
     const container = document.getElementById(containerId);
+    if (!container) return;
     container.querySelectorAll('.option-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
@@ -339,9 +672,9 @@
   bindOptions('inverter-options', val => { selectedInverter = val; });
   bindOptions('bms-options', val => { selectedBms = val; });
   bindOptions('transport-options', val => { selectedTransport = val; });
-
   updateManifest();
 
+  // Сканування Bluetooth з браузера
   const scanBleBtn = document.getElementById('scan-ble-btn');
   const bleScanResult = document.getElementById('ble-scan-result');
   if (scanBleBtn) {
@@ -349,7 +682,7 @@
       if (!navigator.bluetooth) {
         bleScanResult.style.display = 'block';
         bleScanResult.style.color = '#dc2626';
-        bleScanResult.textContent = 'Web Bluetooth не підтримується цим браузером (рекомендовано Google Chrome або Edge). Після прошивки ESP32 знайде вашу BMS автоматично!';
+        bleScanResult.textContent = 'Web Bluetooth не підтримується цим браузером. Після прошивки ESP32 знайде вашу BMS автоматично!';
         return;
       }
       try {
@@ -359,14 +692,166 @@
         const device = await navigator.bluetooth.requestDevice({
           acceptAllDevices: true
         });
-        bleScanResult.style.color = '#16a34a';
-        bleScanResult.innerHTML = '✓ <strong>Знайдено:</strong> ' + (device.name || 'Невідомий BLE пристрій') + ' (ID: ' + device.id.slice(0, 8) + '...).<br>Блок ESP32 виявить його в ефірі після прошивки!';
+        bleScanResult.style.color = '#10b981';
+        bleScanResult.innerHTML = '✓ <strong>Знайдено:</strong> ' + (device.name || 'Невідомий BLE пристрій') + ' (ID: ' + device.id.slice(0, 8) + '...).<br>Блок ESP32 знайде його в ефірі після прошивки!';
       } catch (err) {
         if (err.name !== 'NotFoundError') {
           bleScanResult.style.display = 'block';
           bleScanResult.style.color = '#64748b';
-          bleScanResult.textContent = 'Пошук скасовано або не знайдено пристроїв.';
+          bleScanResult.textContent = 'Пошук скасовано.';
         }
+      }
+    });
+  }
+
+  // Логіка Вкладки 2 (Онлайн-Конструктор YAML)
+  function generateYamlConfig() {
+    const nodeName = document.getElementById('cfg-node-name').value.trim() || 'solar-node';
+    const friendlyName = document.getElementById('cfg-friendly-name').value.trim() || 'Solar Inverter';
+    const inverter = document.getElementById('cfg-inverter').value;
+    const bms = document.getElementById('cfg-bms').value;
+    const board = document.getElementById('cfg-board').value;
+    const jkProto = document.getElementById('cfg-jk-proto').value;
+    const txPin = document.getElementById('cfg-tx-pin').value.trim() || 'GPIO16';
+    const rxPin = document.getElementById('cfg-rx-pin').value.trim() || 'GPIO17';
+    const mqttBroker = document.getElementById('cfg-mqtt-broker').value.trim() || 'homeassistant.local';
+    const mqttPort = document.getElementById('cfg-mqtt-port').value.trim() || '1883';
+    const mqttUser = document.getElementById('cfg-mqtt-user').value.trim();
+    const mqttPass = document.getElementById('cfg-mqtt-pass').value.trim();
+    const rules = document.getElementById('cfg-rules').checked;
+    const tempSensor = document.getElementById('cfg-temp').checked;
+
+    // Показати/сховати селект версії JK протоколу
+    const jkGroup = document.getElementById('cfg-jk-proto-group');
+    if (jkGroup) jkGroup.style.display = (bms === 'jk_ble') ? 'block' : 'none';
+
+    let yaml = `# ${friendlyName} - ESPHome Configuration\n`;
+    yaml += `# Згенеровано в онлайн-конструкторі victor-node\n\n`;
+
+    yaml += `substitutions:\n`;
+    yaml += `  node_name: ${nodeName}\n`;
+    yaml += `  friendly_name: "${friendlyName}"\n`;
+    yaml += `  area: "Solar"\n`;
+    yaml += `  board: ${board}\n`;
+    yaml += `  led_pin: GPIO2\n\n`;
+
+    yaml += `  # MQTT Брокер (підтримує динамічну зміну у веб-інтерфейсі)\n`;
+    yaml += `  mqtt_broker: "${mqttBroker}"\n`;
+    yaml += `  mqtt_port: "${mqttPort}"\n`;
+    yaml += `  mqtt_username: "${mqttUser}"\n`;
+    yaml += `  mqtt_password: "${mqttPass}"\n`;
+    yaml += `  mqtt_prefix: ${nodeName}/node\n`;
+    yaml += `  discovery_prefix: homeassistant\n`;
+    yaml += `  mqtt_log_level: WARN\n`;
+    yaml += `  mqtt_reboot_timeout: 60min\n\n`;
+
+    if (inverter !== 'probe') {
+      yaml += `  # Інвертор RS232\n`;
+      yaml += `  inverter_tx_pin: ${txPin}\n`;
+      yaml += `  inverter_rx_pin: ${rxPin}\n`;
+      yaml += `  inverter_voltage_offset: "0"\n`;
+      yaml += `  update_interval: 15s\n`;
+      yaml += `  select_skip_updates: "2"\n`;
+      yaml += `  modbus_write_multiple: "false"\n\n`;
+    }
+
+    if (bms !== 'none') {
+      yaml += `  # BMS Батареї (авто-пошук в ефірі увімкнено)\n`;
+      yaml += `  bms_default_mac: "00:00:00:00:00:00"\n`;
+      if (bms === 'jk_ble') {
+        yaml += `  jk_bms_source: github://syssi/esphome-jk-bms@59c994e726c34b123e43eb0090736fd94706f0db\n`;
+        yaml += `  bms_protocol: ${jkProto}\n`;
+      } else if (bms === 'daly_ble') {
+        yaml += `  daly_bms_source: github://syssi/esphome-daly-bms@ebfe3a7be3fae1e1808f3244a2d68e9b5eabf8ff\n`;
+      } else if (bms === 'jbd_ble') {
+        yaml += `  jbd_bms_source: github://syssi/esphome-jbd-bms@f70ad25b0a5bf67e29c91461ab1fccbb4ba30f58\n`;
+      }
+      yaml += `  bms_throttle: 10s\n\n`;
+    }
+
+    yaml += `packages:\n`;
+    yaml += `  base: github://vad0s94/victor-node/esphome/packages/base.yaml@main\n`;
+    yaml += `  transport: github://vad0s94/victor-node/esphome/packages/transport-mqtt.yaml@main\n`;
+    yaml += `  ota_remote: github://vad0s94/victor-node/esphome/packages/ota-remote.yaml@main\n`;
+    yaml += `  status_led: github://vad0s94/victor-node/esphome/packages/status-led.yaml@main\n`;
+
+    if (inverter === 'powmr_2341') {
+      yaml += `  inverter: github://vad0s94/victor-node/esphome/packages/inverter-powmr-2341.yaml@main\n`;
+    } else if (inverter === 'pi30') {
+      yaml += `  inverter: github://vad0s94/victor-node/esphome/packages/inverter-pi30.yaml@main\n`;
+    }
+
+    if (bms === 'jk_ble') {
+      yaml += `  bms: github://vad0s94/victor-node/esphome/packages/bms-jk-ble.yaml@main\n`;
+    } else if (bms === 'daly_ble') {
+      yaml += `  bms: github://vad0s94/victor-node/esphome/packages/bms-daly-ble.yaml@main\n`;
+    } else if (bms === 'jbd_ble') {
+      yaml += `  bms: github://vad0s94/victor-node/esphome/packages/bms-jbd-ble.yaml@main\n`;
+    }
+
+    if (rules && inverter === 'powmr_2341' && bms !== 'none') {
+      yaml += `  rules: github://vad0s94/victor-node/esphome/packages/rules-soc.yaml@main\n`;
+    }
+
+    if (tempSensor) {
+      yaml += `  temperature: github://vad0s94/victor-node/esphome/packages/temp-ds18b20.yaml@main\n`;
+    }
+
+    const outputEl = document.getElementById('cfg-yaml-output');
+    if (outputEl) outputEl.value = yaml;
+    return yaml;
+  }
+
+  // Автоматичне оновлення YAML при зміні будь-якого поля
+  const formInputs = [
+    'cfg-node-name', 'cfg-friendly-name', 'cfg-inverter', 'cfg-bms',
+    'cfg-board', 'cfg-jk-proto', 'cfg-tx-pin', 'cfg-rx-pin',
+    'cfg-mqtt-broker', 'cfg-mqtt-port', 'cfg-mqtt-user', 'cfg-mqtt-pass',
+    'cfg-rules', 'cfg-temp'
+  ];
+  formInputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', generateYamlConfig);
+      el.addEventListener('change', generateYamlConfig);
+    }
+  });
+  generateYamlConfig();
+
+  // Завантаження .yaml файлу
+  const downloadBtn = document.getElementById('btn-download-yaml');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
+      const yaml = generateYamlConfig();
+      const nodeName = document.getElementById('cfg-node-name').value.trim() || 'solar-node';
+      const blob = new Blob([yaml], { type: 'text/yaml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${nodeName}.yaml`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+  }
+
+  // Копіювання YAML
+  const copyBtn = document.getElementById('btn-copy-yaml');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const yaml = generateYamlConfig();
+      try {
+        await navigator.clipboard.writeText(yaml);
+        const originalText = copyBtn.textContent;
+        copyBtn.textContent = '✓ Скопійовано!';
+        copyBtn.style.background = '#10b981';
+        setTimeout(() => {
+          copyBtn.textContent = originalText;
+          copyBtn.style.background = '#334155';
+        }, 2000);
+      } catch (err) {
+        alert('Не вдалося скопіювати в буфер. Ви можете виділити код у вікні нижче вручну.');
       }
     });
   }

@@ -44,6 +44,22 @@ on:
           - mqtt_tls
           - flespi
         default: mqtt
+      mqtt_broker:
+        description: "MQTT Broker Host or IP (default: homeassistant.local)"
+        required: false
+        default: "homeassistant.local"
+      mqtt_port:
+        description: "MQTT Broker Port (default: 1883)"
+        required: false
+        default: "1883"
+      mqtt_username:
+        description: "MQTT Username (Optional)"
+        required: false
+        default: ""
+      mqtt_password:
+        description: "MQTT Password (Optional)"
+        required: false
+        default: ""
       rules:
         description: "Enable on-device battery SOC rules (PowMr with BMS only)"
         required: false
@@ -102,6 +118,10 @@ jobs:
             --bms "${{ github.event.inputs.bms }}" \
             --bms-packs 1 \
             --transport "${{ github.event.inputs.transport }}" \
+            --mqtt-broker "${{ github.event.inputs.mqtt_broker || 'homeassistant.local' }}" \
+            --mqtt-port "${{ github.event.inputs.mqtt_port || '1883' }}" \
+            --mqtt-username "${{ github.event.inputs.mqtt_username }}" \
+            --mqtt-password "${{ github.event.inputs.mqtt_password }}" \
             $RULES_FLAG \
             -o "esphome/${{ github.event.inputs.node_name }}.yaml"
 

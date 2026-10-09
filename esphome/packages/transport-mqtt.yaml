@@ -1,8 +1,36 @@
 # Universal MQTT transport for any standard broker (local Mosquitto, EMQX, HiveMQ, etc.)
+# Supports dynamic runtime configuration via ESP32 Web UI (http://<ip>/) and Flash persistence.
 #
 # Expects substitutions:
 #   mqtt_broker, mqtt_port, mqtt_username, mqtt_password,
 #   mqtt_prefix, discovery_prefix, mqtt_log_level, mqtt_reboot_timeout, node_name.
+
+esphome:
+  on_boot:
+    priority: -100
+    then:
+      - lambda: |-
+          bool need_restart = false;
+          if (!id(mqtt_broker_host_setting).state.empty() && id(mqtt_broker_host_setting).state != "${mqtt_broker}") {
+            id(mqtt_client).set_broker_address(id(mqtt_broker_host_setting).state);
+            need_restart = true;
+          }
+          if (id(mqtt_broker_port_setting).state > 0 && static_cast<uint16_t>(id(mqtt_broker_port_setting).state) != ${mqtt_port}) {
+            id(mqtt_client).set_broker_port(static_cast<uint16_t>(id(mqtt_broker_port_setting).state));
+            need_restart = true;
+          }
+          if (!id(mqtt_username_setting).state.empty() && id(mqtt_username_setting).state != "${mqtt_username}") {
+            id(mqtt_client).set_username(id(mqtt_username_setting).state);
+            need_restart = true;
+          }
+          if (!id(mqtt_password_setting).state.empty() && id(mqtt_password_setting).state != "${mqtt_password}") {
+            id(mqtt_client).set_password(id(mqtt_password_setting).state);
+            need_restart = true;
+          }
+          if (need_restart) {
+            id(mqtt_client).disable();
+            id(mqtt_client).enable();
+          }
 
 mqtt:
   id: mqtt_client
@@ -23,6 +51,102 @@ mqtt:
   keepalive: 30s
   reboot_timeout: ${mqtt_reboot_timeout}
   on_connect:
-    - lambda: 'id(transport_connected) = true;'
+    - lambda: |-
+        id(transport_connected) = true;
+        id(mqtt_status_sensor).publish_state("Connected");
   on_disconnect:
-    - lambda: 'id(transport_connected) = false;'
+    - lambda: |-
+        id(transport_connected) = false;
+        id(mqtt_status_sensor).publish_state("Disconnected");
+
+text:
+  - platform: template
+    name: "MQTT Broker Host"
+    id: mqtt_broker_host_setting
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: ${mqtt_broker}
+    icon: "mdi:server-network"
+    entity_category: config
+    set_action:
+      - lambda: |-
+          if (x != id(mqtt_broker_host_setting).state) {
+            id(mqtt_client).disable();
+            id(mqtt_client).set_broker_address(x);
+            id(mqtt_client).enable();
+          }
+
+  - platform: template
+    name: "MQTT Username"
+    id: mqtt_username_setting
+    mode: text
+    optimistic: true
+    restore_value: true
+    initial_value: ${mqtt_username}
+    icon: "mdi:account-key"
+    entity_category: config
+    set_action:
+      - lambda: |-
+          id(mqtt_client).disable();
+          id(mqtt_client).set_username(x);
+          id(mqtt_client).enable();
+
+  - platform: template
+    name: "MQTT Password"
+    id: mqtt_password_setting
+    mode: password
+    optimistic: true
+    restore_value: true
+    initial_value: ${mqtt_password}
+    icon: "mdi:lock"
+    entity_category: config
+    set_action:
+      - lambda: |-
+          id(mqtt_client).disable();
+          id(mqtt_client).set_password(x);
+          id(mqtt_client).enable();
+
+number:
+  - platform: template
+    name: "MQTT Broker Port"
+    id: mqtt_broker_port_setting
+    optimistic: true
+    restore_value: true
+    initial_value: ${mqtt_port}
+    min_value: 1
+    max_value: 65535
+    step: 1
+    mode: box
+    icon: "mdi:numeric"
+    entity_category: config
+    set_action:
+      - lambda: |-
+          id(mqtt_client).disable();
+          id(mqtt_client).set_broker_port(static_cast<uint16_t>(x));
+          id(mqtt_client).enable();
+
+button:
+  - platform: template
+    name: "MQTT Reconnect Apply"
+    icon: "mdi:sync"
+    entity_category: config
+    on_press:
+      - lambda: |-
+          id(mqtt_client).disable();
+          if (!id(mqtt_broker_host_setting).state.empty()) {
+            id(mqtt_client).set_broker_address(id(mqtt_broker_host_setting).state);
+          }
+          if (id(mqtt_broker_port_setting).state > 0) {
+            id(mqtt_client).set_broker_port(static_cast<uint16_t>(id(mqtt_broker_port_setting).state));
+          }
+          id(mqtt_client).set_username(id(mqtt_username_setting).state);
+          id(mqtt_client).set_password(id(mqtt_password_setting).state);
+          id(mqtt_client).enable();
+
+text_sensor:
+  - platform: template
+    name: "MQTT Connection Status"
+    id: mqtt_status_sensor
+    icon: "mdi:lan-connect"
+    entity_category: diagnostic
