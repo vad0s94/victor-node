@@ -9,6 +9,7 @@
 
 packages:
   ble_common: !include bms-ble-common.yaml
+  connect_buttons: !include bms-connect-buttons-single.yaml
 
 external_components:
   - source: ${daly_bms_source}

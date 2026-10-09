@@ -1,0 +1,125 @@
+# One-click buttons to assign discovered BLE BMS devices to parallel battery packs (Pack 1 & Pack 2)
+
+button:
+  - platform: template
+    id: bms1_connect_slot1
+    name: "Assign Discovered 1 to Pack 1"
+    icon: mdi:battery-arrow-up-outline
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_1_mac).empty()) {
+            ESP_LOGW("bms", "Assigning Slot 1 to Pack 1: %s", id(bms_slot_1_mac).c_str());
+            id(bms1_mac).publish_state(id(bms_slot_1_mac));
+            id(bms1_apply_mac).execute();
+          } else {
+            ESP_LOGW("bms", "Slot 1 is empty, cannot assign");
+          }
+
+  - platform: template
+    id: bms1_connect_slot2
+    name: "Assign Discovered 2 to Pack 1"
+    icon: mdi:battery-arrow-up-outline
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_2_mac).empty()) {
+            ESP_LOGW("bms", "Assigning Slot 2 to Pack 1: %s", id(bms_slot_2_mac).c_str());
+            id(bms1_mac).publish_state(id(bms_slot_2_mac));
+            id(bms1_apply_mac).execute();
+          } else {
+            ESP_LOGW("bms", "Slot 2 is empty, cannot assign");
+          }
+
+  - platform: template
+    id: bms2_connect_slot1
+    name: "Assign Discovered 1 to Pack 2"
+    icon: mdi:battery-arrow-up-outline
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_1_mac).empty()) {
+            ESP_LOGW("bms", "Assigning Slot 1 to Pack 2: %s", id(bms_slot_1_mac).c_str());
+            id(bms2_mac).publish_state(id(bms_slot_1_mac));
+            id(bms2_apply_mac).execute();
+          } else {
+            ESP_LOGW("bms", "Slot 1 is empty, cannot assign");
+          }
+
+  - platform: template
+    id: bms2_connect_slot2
+    name: "Assign Discovered 2 to Pack 2"
+    icon: mdi:battery-arrow-up-outline
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_2_mac).empty()) {
+            ESP_LOGW("bms", "Assigning Slot 2 to Pack 2: %s", id(bms_slot_2_mac).c_str());
+            id(bms2_mac).publish_state(id(bms_slot_2_mac));
+            id(bms2_apply_mac).execute();
+          } else {
+            ESP_LOGW("bms", "Slot 2 is empty, cannot assign");
+          }
+
+  - platform: template
+    id: bms_auto_assign_packs
+    name: "Auto-Assign Both Packs (1 to Pack 1, 2 to Pack 2)"
+    icon: mdi:battery-sync
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_1_mac).empty()) {
+            ESP_LOGW("bms", "Assigning Slot 1 (%s) to Pack 1", id(bms_slot_1_mac).c_str());
+            id(bms1_mac).publish_state(id(bms_slot_1_mac));
+            id(bms1_apply_mac).execute();
+          }
+          if (!id(bms_slot_2_mac).empty()) {
+            ESP_LOGW("bms", "Assigning Slot 2 (%s) to Pack 2", id(bms_slot_2_mac).c_str());
+            id(bms2_mac).publish_state(id(bms_slot_2_mac));
+            id(bms2_apply_mac).execute();
+          }
+
+select:
+  - platform: template
+    id: bms1_selection_mode
+    name: "Pack 1 Selection Mode"
+    icon: mdi:form-select
+    entity_category: config
+    options:
+      - "Manual MAC"
+      - "Use Discovered 1"
+      - "Use Discovered 2"
+    initial_option: "Manual MAC"
+    restore_value: true
+    optimistic: true
+    set_action:
+      - lambda: |-
+          if (x == "Use Discovered 1" && !id(bms_slot_1_mac).empty()) {
+            id(bms1_mac).publish_state(id(bms_slot_1_mac));
+            id(bms1_apply_mac).execute();
+          } else if (x == "Use Discovered 2" && !id(bms_slot_2_mac).empty()) {
+            id(bms1_mac).publish_state(id(bms_slot_2_mac));
+            id(bms1_apply_mac).execute();
+          }
+
+  - platform: template
+    id: bms2_selection_mode
+    name: "Pack 2 Selection Mode"
+    icon: mdi:form-select
+    entity_category: config
+    options:
+      - "Manual MAC"
+      - "Use Discovered 1"
+      - "Use Discovered 2"
+    initial_option: "Manual MAC"
+    restore_value: true
+    optimistic: true
+    set_action:
+      - lambda: |-
+          if (x == "Use Discovered 1" && !id(bms_slot_1_mac).empty()) {
+            id(bms2_mac).publish_state(id(bms_slot_1_mac));
+            id(bms2_apply_mac).execute();
+          } else if (x == "Use Discovered 2" && !id(bms_slot_2_mac).empty()) {
+            id(bms2_mac).publish_state(id(bms_slot_2_mac));
+            id(bms2_apply_mac).execute();
+          }

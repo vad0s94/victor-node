@@ -57,15 +57,16 @@ jobs:
           JK_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/jk-src/components"
           DALY_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/daly-src/components"
           JBD_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/jbd-src/components"
+          cd esphome
           for cfg in victor.yaml victor-pi30.yaml powmr-jk-api.yaml powmr-jk-mqtt.yaml powmr-nobms-api.yaml voltronic-jk-api.yaml voltronic-nobms-api.yaml test-*.yaml; do
             echo "==> Validating $cfg..."
             esphome \
               -s jk_bms_source "$JK_SRC_ABS" \
               -s daly_bms_source "$DALY_SRC_ABS" \
               -s jbd_bms_source "$JBD_SRC_ABS" \
-              config "esphome/$cfg"
+              config "$cfg"
           done
-          rm -f esphome/test-*.yaml
+          rm -f test-*.yaml
 
       - name: Check Home Assistant entity parity
         run: |

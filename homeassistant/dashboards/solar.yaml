@@ -255,7 +255,7 @@ views:
                 name: Звичайне джерело заряду
 
   - title: Налаштування
-    path: dacha-admin
+    path: solar-admin
     icon: mdi:cog
     type: sections
     visible:
@@ -298,14 +298,20 @@ views:
       - type: grid
         cards:
           - type: heading
-            heading: BMS налаштування
+            heading: BMS налаштування та вибір Bluetooth
           - type: markdown
             content: >
-              Тут основні. Усі 45 параметрів і 17 перемикачів JK:
-              Settings → Devices → Victor → Configuration.
-              Після зміни натисни «Retrieve Settings», щоб перечитати значення з BMS.
+              Пошук та вибір BMS в ефірі: натисніть «Scan BLE Devices Now», після чого оберіть потрібну BMS кнопкою швидкого підключення.
           - type: entities
             entities:
+              - button.victor_scan_ble_devices_now
+              - sensor.victor_bms_discovered_1
+              - button.victor_connect_discovered_bms_1
+              - sensor.victor_bms_discovered_2
+              - button.victor_connect_discovered_bms_2
+              - button.victor_auto_connect_nearest_bms
+              - select.victor_bms_selection_mode
+              - text.victor_bms_mac
               - button.victor_bms_retrieve_settings
               - number.victor_bms_max_charge_current
               - number.victor_bms_max_discharge_current

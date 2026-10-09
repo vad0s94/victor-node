@@ -1,0 +1,74 @@
+# One-click buttons to connect to discovered BLE BMS devices (Single Pack)
+
+button:
+  - platform: template
+    id: bms_connect_discovered_1
+    name: "Connect Discovered BMS 1"
+    icon: mdi:bluetooth-connect
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_1_mac).empty()) {
+            ESP_LOGW("bms", "Connecting to Slot 1: %s", id(bms_slot_1_mac).c_str());
+            id(bms_mac).publish_state(id(bms_slot_1_mac));
+            id(bms_apply_mac).execute();
+          } else {
+            ESP_LOGW("bms", "Slot 1 is empty, cannot connect");
+          }
+
+  - platform: template
+    id: bms_connect_discovered_2
+    name: "Connect Discovered BMS 2"
+    icon: mdi:bluetooth-connect
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_2_mac).empty()) {
+            ESP_LOGW("bms", "Connecting to Slot 2: %s", id(bms_slot_2_mac).c_str());
+            id(bms_mac).publish_state(id(bms_slot_2_mac));
+            id(bms_apply_mac).execute();
+          } else {
+            ESP_LOGW("bms", "Slot 2 is empty, cannot connect");
+          }
+
+  - platform: template
+    id: bms_auto_connect
+    name: "Auto-Connect Nearest BMS"
+    icon: mdi:bluetooth-audio
+    entity_category: config
+    on_press:
+      - lambda: |-
+          if (!id(bms_slot_1_mac).empty()) {
+            ESP_LOGW("bms", "Auto-connecting to nearest BMS: %s", id(bms_slot_1_mac).c_str());
+            id(bms_mac).publish_state(id(bms_slot_1_mac));
+            id(bms_apply_mac).execute();
+          } else {
+            ESP_LOGW("bms", "No BMS discovered yet. Press 'Scan BLE Devices Now' first.");
+          }
+
+select:
+  - platform: template
+    id: bms_selection_mode
+    name: "BMS Selection Mode"
+    icon: mdi:form-select
+    entity_category: config
+    options:
+      - "Manual MAC"
+      - "Connect Discovered 1"
+      - "Connect Discovered 2"
+      - "Auto-Select Strongest"
+    initial_option: "Manual MAC"
+    restore_value: true
+    optimistic: true
+    set_action:
+      - lambda: |-
+          if (x == "Connect Discovered 1" && !id(bms_slot_1_mac).empty()) {
+            id(bms_mac).publish_state(id(bms_slot_1_mac));
+            id(bms_apply_mac).execute();
+          } else if (x == "Connect Discovered 2" && !id(bms_slot_2_mac).empty()) {
+            id(bms_mac).publish_state(id(bms_slot_2_mac));
+            id(bms_apply_mac).execute();
+          } else if (x == "Auto-Select Strongest" && !id(bms_slot_1_mac).empty()) {
+            id(bms_mac).publish_state(id(bms_slot_1_mac));
+            id(bms_apply_mac).execute();
+          }

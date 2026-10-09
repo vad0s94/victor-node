@@ -13,6 +13,7 @@
 packages:
   ble_common: !include bms-ble-common.yaml
   aggregator: !include bms-parallel-aggregator.yaml
+  connect_buttons: !include bms-connect-buttons-parallel.yaml
 
 external_components:
   - source: ${jk_bms_source}

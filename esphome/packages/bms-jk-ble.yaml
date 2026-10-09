@@ -18,6 +18,7 @@
 
 packages:
   ble_common: !include bms-ble-common.yaml
+  connect_buttons: !include bms-connect-buttons-single.yaml
 
 external_components:
   # Default (set in the main config): github://syssi/esphome-jk-bms@<commit>.

@@ -211,6 +211,22 @@
       </div>
     </div>
 
+    <!-- Пошук Bluetooth BMS -->
+    <div style="margin: 14px 0 22px; padding: 14px 16px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px;">
+      <div style="font-weight: 600; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+        <span>🔍 Пошук Bluetooth BMS в ефірі</span>
+        <span style="font-size: 11px; background: #e2e8f0; color: #475569; padding: 2px 6px; border-radius: 4px;">Новинка</span>
+      </div>
+      <p style="font-size: 13px; color: #64748b; margin-bottom: 10px; line-height: 1.4;">
+        Після прошивки ESP32 сам сканує BLE-ефір і дозволяє підключити знайдену BMS в 1 клік у веб-інтерфейсі чи Home Assistant.
+        Ви також можете перевірити наявність сигналу вашої батареї прямо зараз у браузері:
+      </p>
+      <button type="button" id="scan-ble-btn" style="background: #0284c7; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+        <span>📡 Сканувати Bluetooth BMS поруч</span>
+      </button>
+      <div id="ble-scan-result" style="margin-top: 10px; font-size: 13px; display: none;"></div>
+    </div>
+
     <!-- Крок 3: Транспорт -->
     <div class="step-title">
       <span class="step-badge">3</span> Як підключатимете до Home Assistant?
@@ -252,7 +268,7 @@
 
   <div class="footer-notes">
     <p>Після завершення прошивки браузер запропонує ввести ім'я та пароль вашого Wi-Fi.</p>
-    <p style="margin-top: 6px;">Вихідний код проєкту доступний на <a href="https://github.com/vadykravchuk/victor-node" target="_blank">GitHub</a>.</p>
+    <p style="margin-top: 6px;">Вихідний код проєкту доступний на <a href="https://github.com/vad0s94/victor-node" target="_blank">GitHub</a>.</p>
   </div>
 </div>
 
@@ -340,6 +356,35 @@
   bindOptions('transport-options', val => { selectedTransport = val; });
 
   updateManifest();
+
+  const scanBleBtn = document.getElementById('scan-ble-btn');
+  const bleScanResult = document.getElementById('ble-scan-result');
+  if (scanBleBtn) {
+    scanBleBtn.addEventListener('click', async () => {
+      if (!navigator.bluetooth) {
+        bleScanResult.style.display = 'block';
+        bleScanResult.style.color = '#dc2626';
+        bleScanResult.textContent = 'Web Bluetooth не підтримується цим браузером (рекомендовано Google Chrome або Edge). Після прошивки ESP32 знайде вашу BMS автоматично!';
+        return;
+      }
+      try {
+        bleScanResult.style.display = 'block';
+        bleScanResult.style.color = '#0284c7';
+        bleScanResult.textContent = 'Очікування вибору пристрою Bluetooth...';
+        const device = await navigator.bluetooth.requestDevice({
+          acceptAllDevices: true
+        });
+        bleScanResult.style.color = '#16a34a';
+        bleScanResult.innerHTML = '✓ <strong>Знайдено:</strong> ' + (device.name || 'Невідомий BLE пристрій') + ' (ID: ' + device.id.slice(0, 8) + '...).<br>Блок ESP32 виявить його в ефірі після прошивки!';
+      } catch (err) {
+        if (err.name !== 'NotFoundError') {
+          bleScanResult.style.display = 'block';
+          bleScanResult.style.color = '#64748b';
+          bleScanResult.textContent = 'Пошук скасовано або не знайдено пристроїв.';
+        }
+      }
+    });
+  }
 </script>
 
 </body>

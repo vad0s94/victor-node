@@ -1,9 +1,30 @@
 # Shared Bluetooth Low Energy (BLE) discovery tracker for all BMS types.
-# Scans nearby BLE advertisements and publishes detected BMS devices to Home Assistant.
+# Scans nearby BLE advertisements and publishes detected BMS devices into slots.
 
 globals:
   - id: bms_found
     type: std::map<std::string, std::string>
+  - id: bms_slot_1_mac
+    type: std::string
+  - id: bms_slot_1_name
+    type: std::string
+  - id: bms_slot_1_rssi
+    type: int
+    initial_value: "-999"
+  - id: bms_slot_2_mac
+    type: std::string
+  - id: bms_slot_2_name
+    type: std::string
+  - id: bms_slot_2_rssi
+    type: int
+    initial_value: "-999"
+  - id: bms_slot_3_mac
+    type: std::string
+  - id: bms_slot_3_name
+    type: std::string
+  - id: bms_slot_3_rssi
+    type: int
+    initial_value: "-999"
 
 esp32_ble_tracker:
   scan_parameters:
@@ -14,15 +35,97 @@ esp32_ble_tracker:
             auto name = x.get_name();
             char mac[18];
             x.address_str_to(mac);
+            std::string mac_str(mac);
+            int rssi = x.get_rssi();
+
             char line[64];
             snprintf(line, sizeof(line), "%s %.*s %ddBm", mac, (int) std::min<size_t>(name.size(), 20),
-                     name.c_str(), x.get_rssi());
-            id(bms_found)[std::string(mac)] = std::string(line);
+                     name.c_str(), rssi);
+            id(bms_found)[mac_str] = std::string(line);
+
+            std::string lower_name = name;
+            for (char &c : lower_name) c = tolower(c);
+
+            bool is_bms = (lower_name.find("jk") != std::string::npos ||
+                           lower_name.find("daly") != std::string::npos ||
+                           lower_name.find("dl-") != std::string::npos ||
+                           lower_name.find("jbd") != std::string::npos ||
+                           lower_name.find("xiaoxiang") != std::string::npos ||
+                           lower_name.find("liontron") != std::string::npos ||
+                           lower_name.find("ant") != std::string::npos ||
+                           lower_name.find("bms") != std::string::npos);
+
+            if (id(bms_slot_1_mac) == mac_str) {
+              id(bms_slot_1_rssi) = rssi;
+              if (!name.empty()) id(bms_slot_1_name) = name;
+              return;
+            }
+            if (id(bms_slot_2_mac) == mac_str) {
+              id(bms_slot_2_rssi) = rssi;
+              if (!name.empty()) id(bms_slot_2_name) = name;
+              return;
+            }
+            if (id(bms_slot_3_mac) == mac_str) {
+              id(bms_slot_3_rssi) = rssi;
+              if (!name.empty()) id(bms_slot_3_name) = name;
+              return;
+            }
+
+            if (id(bms_slot_1_mac).empty() || (is_bms && id(bms_slot_1_name) == "BLE Device")) {
+              if (!id(bms_slot_1_mac).empty()) {
+                id(bms_slot_2_mac) = id(bms_slot_1_mac);
+                id(bms_slot_2_name) = id(bms_slot_1_name);
+                id(bms_slot_2_rssi) = id(bms_slot_1_rssi);
+              }
+              id(bms_slot_1_mac) = mac_str;
+              id(bms_slot_1_name) = name.empty() ? "BLE Device" : name;
+              id(bms_slot_1_rssi) = rssi;
+            } else if (id(bms_slot_2_mac).empty() || (is_bms && id(bms_slot_2_name) == "BLE Device")) {
+              if (!id(bms_slot_2_mac).empty()) {
+                id(bms_slot_3_mac) = id(bms_slot_2_mac);
+                id(bms_slot_3_name) = id(bms_slot_2_name);
+                id(bms_slot_3_rssi) = id(bms_slot_2_rssi);
+              }
+              id(bms_slot_2_mac) = mac_str;
+              id(bms_slot_2_name) = name.empty() ? "BLE Device" : name;
+              id(bms_slot_2_rssi) = rssi;
+            } else if (id(bms_slot_3_mac).empty()) {
+              id(bms_slot_3_mac) = mac_str;
+              id(bms_slot_3_name) = name.empty() ? "BLE Device" : name;
+              id(bms_slot_3_rssi) = rssi;
+            }
 
 interval:
-  - interval: 60s
+  - interval: 15s
     then:
       - lambda: |-
+          if (!id(bms_slot_1_mac).empty()) {
+            char buf[80];
+            snprintf(buf, sizeof(buf), "%s [%s] %ddBm", id(bms_slot_1_name).c_str(),
+                     id(bms_slot_1_mac).c_str(), id(bms_slot_1_rssi));
+            id(bms_discovered_1).publish_state(buf);
+          } else {
+            id(bms_discovered_1).publish_state("None");
+          }
+
+          if (!id(bms_slot_2_mac).empty()) {
+            char buf[80];
+            snprintf(buf, sizeof(buf), "%s [%s] %ddBm", id(bms_slot_2_name).c_str(),
+                     id(bms_slot_2_mac).c_str(), id(bms_slot_2_rssi));
+            id(bms_discovered_2).publish_state(buf);
+          } else {
+            id(bms_discovered_2).publish_state("None");
+          }
+
+          if (!id(bms_slot_3_mac).empty()) {
+            char buf[80];
+            snprintf(buf, sizeof(buf), "%s [%s] %ddBm", id(bms_slot_3_name).c_str(),
+                     id(bms_slot_3_mac).c_str(), id(bms_slot_3_rssi));
+            id(bms_discovered_3).publish_state(buf);
+          } else {
+            id(bms_discovered_3).publish_state("None");
+          }
+
           std::string out;
           for (auto &kv : id(bms_found)) {
             if (!out.empty()) out += "; ";
@@ -31,11 +134,45 @@ interval:
           if (out.empty()) out = "none";
           if (out.size() > 250) out = out.substr(0, 250);
           id(bms_found_text).publish_state(out);
+
+button:
+  - platform: template
+    id: bms_rescan_button
+    name: "Scan BLE Devices Now"
+    icon: mdi:bluetooth-audio
+    entity_category: config
+    on_press:
+      - lambda: |-
+          id(bms_slot_1_mac).clear(); id(bms_slot_1_name).clear(); id(bms_slot_1_rssi) = -999;
+          id(bms_slot_2_mac).clear(); id(bms_slot_2_name).clear(); id(bms_slot_2_rssi) = -999;
+          id(bms_slot_3_mac).clear(); id(bms_slot_3_name).clear(); id(bms_slot_3_rssi) = -999;
           id(bms_found).clear();
+          id(bms_discovered_1).publish_state("Scanning...");
+          id(bms_discovered_2).publish_state("Scanning...");
+          id(bms_discovered_3).publish_state("Scanning...");
+          id(bms_found_text).publish_state("Scanning...");
 
 text_sensor:
   - platform: template
     id: bms_found_text
     name: "BMS Found Devices"
     icon: mdi:bluetooth-audio
+    entity_category: diagnostic
+
+  - platform: template
+    id: bms_discovered_1
+    name: "BMS Discovered 1"
+    icon: mdi:bluetooth-connect
+    entity_category: diagnostic
+
+  - platform: template
+    id: bms_discovered_2
+    name: "BMS Discovered 2"
+    icon: mdi:bluetooth-connect
+    entity_category: diagnostic
+
+  - platform: template
+    id: bms_discovered_3
+    name: "BMS Discovered 3"
+    icon: mdi:bluetooth-connect
     entity_category: diagnostic

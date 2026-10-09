@@ -343,6 +343,11 @@ def interactive_wizard():
             bp_choice = input("  Choice [1]: ").strip() or "1"
             bms_protocol = "JK02_24S" if bp_choice == "2" else "JK02_32S"
 
+        print("\n  BMS Bluetooth Discovery & Connection:")
+        print("    ✓ Авто-пошук BMS в ефірі увімкнено автоматично.")
+        print("    ✓ Після прошивки ви зможете обрати знайдений акумулятор кнопкою в Home Assistant")
+        print("      або у локальному вебінтерфейсі ESP32 (http://<ip>/), без ручного введення MAC.")
+
     print("\n4. Select Transport / Communication:")
     print("  [1] Native Home Assistant API (Direct connection, auto-discovered, NO broker required!)")
     print("  [2] Standard MQTT (Local Mosquitto, EMQX, HiveMQ, etc. port 1883)")
