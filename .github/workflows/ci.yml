@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install "esphome==2026.9.1" pyyaml
+          pip install -r requirements.txt
 
       - name: Fetch reference upstream components
         run: |
@@ -41,12 +41,14 @@ jobs:
           python3 tools/constructor.py --preset powmr-nobms-api -o esphome/test-powmr-nobms-api.yaml
           python3 tools/constructor.py --preset voltronic-jk-api -o esphome/test-voltronic-jk-api.yaml
           python3 tools/constructor.py --preset voltronic-nobms-api -o esphome/test-voltronic-nobms-api.yaml
+          rm esphome/test-*.yaml
 
       - name: Validate ESPHome configurations
         run: |
+          JK_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/jk-src/components"
           for cfg in victor.yaml victor-pi30.yaml powmr-jk-api.yaml powmr-jk-mqtt.yaml powmr-nobms-api.yaml voltronic-jk-api.yaml voltronic-nobms-api.yaml; do
             echo "==> Validating $cfg..."
-            esphome -s jk_bms_source tools/ref/jk-src/components config "esphome/$cfg"
+            esphome -s jk_bms_source "$JK_SRC_ABS" config "esphome/$cfg"
           done
 
       - name: Check Home Assistant entity parity

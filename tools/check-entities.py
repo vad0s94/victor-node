@@ -13,11 +13,14 @@ from pathlib import Path
 
 import yaml
 
+import shutil
+
 ROOT = Path(__file__).resolve().parent.parent
 cfg_file = sys.argv[1] if len(sys.argv) > 1 else "victor.yaml"
 jk_src = ROOT / "tools/ref/jk-src/components"
 
-cmd = [str(ROOT / ".venv/bin/esphome")]
+esphome_bin = str(ROOT / ".venv/bin/esphome") if (ROOT / ".venv/bin/esphome").is_file() else shutil.which("esphome") or "esphome"
+cmd = [esphome_bin]
 if jk_src.is_dir():
     cmd += ["-s", "jk_bms_source", "../tools/ref/jk-src/components"]
 cmd += ["config", cfg_file]
