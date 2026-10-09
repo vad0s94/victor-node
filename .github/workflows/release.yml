@@ -18,15 +18,14 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - powmr-jk-api
           - powmr-jk-mqtt
-          - powmr-daly-api
-          - powmr-jbd-api
-          - powmr-nobms-api
-          - voltronic-jk-api
-          - voltronic-daly-api
-          - voltronic-jbd-api
-          - voltronic-nobms-api
+          - powmr-daly-mqtt
+          - powmr-jbd-mqtt
+          - powmr-nobms-mqtt
+          - voltronic-jk-mqtt
+          - voltronic-daly-mqtt
+          - voltronic-jbd-mqtt
+          - voltronic-nobms-mqtt
           - victor-probe
     steps:
       - name: Checkout repository

@@ -1,5 +1,5 @@
 {
-  "name": "PowMr/Victor + Daly BMS (Home Assistant API)",
+  "name": "PowMr/Victor + Daly Smart BMS (Universal MQTT)",
   "version": "1.0.0",
   "home_assistant_domain": "esphome",
   "new_install_prompt_erase": true,
@@ -7,7 +7,7 @@
     {
       "chipFamily": "ESP32",
       "parts": [
-        { "path": "../firmware/powmr-daly-api.factory.bin", "offset": 0 }
+        { "path": "../firmware/powmr-daly-mqtt.factory.bin", "offset": 0 }
       ]
     }
   ]

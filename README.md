@@ -1,8 +1,8 @@
 # Solar Inverter & Battery Gateway (victor-node)
 
-Універсальний шлюз та автономний контролер для сонячних гібридних інверторів (**PowMr, Victor, Voltronic, EASun**) та акумуляторів з **JK BMS** на базі ESP32 та ESPHome.
+Універсальний шлюз та автономний контролер для сонячних гібридних інверторів (**PowMr, Victor, Voltronic, EASun**) та акумуляторів (**JK BMS, Daly BMS, JBD BMS**) на базі ESP32 та ESPHome.
 
-Підтримує як **локальний Home Assistant** (Native API без брокера), так і **віддалені об'єкти за CGNAT** через MQTT мости будь-якого хмарного провайдера (flespi, HiveMQ Cloud, EMQX, власний Mosquitto VPS тощо).
+Підтримує як **локальний Home Assistant** (MQTT з auto-discovery на порту 1883), так і **віддалені об'єкти за CGNAT** через MQTT мости будь-якого хмарного провайдера (flespi, HiveMQ Cloud, EMQX, власний Mosquitto VPS тощо).
 
 ---
 
@@ -11,10 +11,10 @@
 ```
 [Сонячний інвертор] ──RJ45/RS232──┐
 (PowMr / Victor / Voltronic)      │
-                                  ├─ ESP32 ── Wi-Fi ──► [Home Assistant] (Локальна мережа / VPN)
+                                  ├─ ESP32 ── Wi-Fi ──► [Локальний MQTT / Mosquitto] ──► [Home Assistant]
 [LiFePO4 Батарея] ────Bluetooth───┘   │              або
-(JK BMS JK-B1A24S15P / JK-B2A...)     │             ──► [Хмарний MQTT] ◄── Міст ──► [Home Assistant]
-                                      │                                             (за CGNAT)
+(JK / Daly / JBD BMS)                 │             ──► [Хмарний MQTT / TLS] ◄── Міст ──► [Home Assistant]
+                                      │                                                   (за CGNAT)
                                       └─ Автономні правила захисту та заряду
                                          (працюють локально на ESP32 без інтернету)
 ```
@@ -32,10 +32,10 @@
   * **Автоматичний пошук та вибір в ефірі:** блок автоматично сканує простір на наявність акумуляторів. У Home Assistant чи локальному веб-інтерфейсі доступні кнопки швидкого підключення знайденої BMS в 1 клік (`Connect Discovered 1`, `Auto-Connect Nearest`), тож не потрібно вручну шукати та вводити MAC-адресу!
   * Усі налаштування та ключі доступні безпосередньо в Home Assistant.
   * Підтримка роботи взагалі **без BMS** (тільки моніторинг інвертора).
-* **Канал зв'язку на вибір:**
-  * **Home Assistant Native API**: пряме підключення в локальній мережі або через VPN, автоматичне виявлення mDNS без жодного MQTT-брокера.
-  * **Універсальний MQTT**: робота з будь-яким брокером (локальний Mosquitto, EMQX, HiveMQ, AWS IoT).
-  * **Хмарний MQTT міст (Bridge)**: для об'єктів без білої IP / за CGNAT (докладніше у [docs/mqtt-bridges.md](docs/mqtt-bridges.md)).
+* **Канал зв'язку — тільки MQTT (локальний або віддалений):**
+  * **Локальний MQTT**: пряме підключення до будь-якого брокера у вашій домашній мережі (Mosquitto, EMQX, HiveMQ) на порт 1883.
+  * **Home Assistant MQTT Auto-Discovery**: автоматичне створення пристрою та всіх сенсорів у HA без ручного написання конфігурації.
+  * **Віддалений MQTT міст / TLS**: безпечне підключення через TLS порт 8883 (або хмарний міст, наприклад flespi, для об'єктів без білої IP / за CGNAT — див. [docs/mqtt-bridges.md](docs/mqtt-bridges.md)).
 * **Автономні правила на ESP32 ([`packages/rules-soc.yaml`](esphome/packages/rules-soc.yaml)):**
   * Струм заряду від мережі автоматично регулюється за діапазонами SOC батареї.
   * Резервне перемикання на мережу при критично низькому заряді.
@@ -56,11 +56,14 @@
 
 | Профіль | Інвертор | BMS | Зв'язок | Для чого |
 |---|---|---|---|---|
-| `powmr-jk-api` | PowMr / Victor (Modbus) | JK BMS (BLE) | Home Assistant API | Найпопулярніший домашній варіант |
-| `powmr-jk-mqtt` | PowMr / Victor (Modbus) | JK BMS (BLE) | Універсальний MQTT | Для систем з MQTT |
-| `powmr-nobms-api` | PowMr / Victor (Modbus) | Немає | Home Assistant API | Тільки інвертор PowMr |
-| `voltronic-jk-api` | Voltronic (PI30) | JK BMS (BLE) | Home Assistant API | Інвертори Axpert з JK BMS |
-| `voltronic-nobms-api` | Voltronic (PI30) | Немає | Home Assistant API | Тільки інвертор Voltronic |
+| `powmr-jk-mqtt` | PowMr / Victor (Modbus) | JK BMS (BLE) | MQTT | Найпопулярніший домашній варіант |
+| `powmr-daly-mqtt` | PowMr / Victor (Modbus) | Daly Smart BMS | MQTT | Інвертор PowMr з Daly BMS |
+| `powmr-jbd-mqtt` | PowMr / Victor (Modbus) | JBD / Xiaoxiang | MQTT | Інвертор PowMr з JBD BMS |
+| `powmr-nobms-mqtt` | PowMr / Victor (Modbus) | Немає | MQTT | Тільки інвертор PowMr |
+| `voltronic-jk-mqtt` | Voltronic (PI30) | JK BMS (BLE) | MQTT | Інвертори Axpert з JK BMS |
+| `voltronic-daly-mqtt` | Voltronic (PI30) | Daly Smart BMS | MQTT | Інвертори Axpert з Daly BMS |
+| `voltronic-jbd-mqtt` | Voltronic (PI30) | JBD / Xiaoxiang | MQTT | Інвертори Axpert з JBD BMS |
+| `voltronic-nobms-mqtt` | Voltronic (PI30) | Немає | MQTT | Тільки інвертор Voltronic |
 | `probe-mqtt` | Сканер | Немає | MQTT | Пошук протоколу інвертора |
 
 1. Відкрийте [web.esphome.io](https://web.esphome.io) у Chrome або Edge.
@@ -87,7 +90,7 @@
 python3 tools/constructor.py -i
 
 # Або згенерувати конфіг через пресет:
-python3 tools/constructor.py --preset powmr-jk-api -o esphome/my-inverter.yaml
+python3 tools/constructor.py --preset powmr-jk-mqtt -o esphome/my-inverter.yaml
 
 # Або вказати всі параметри прапорцями:
 python3 tools/constructor.py \
@@ -95,7 +98,7 @@ python3 tools/constructor.py \
   --board esp32dev \
   --inverter powmr_2341 \
   --bms jk_ble \
-  --transport api \
+  --transport mqtt \
   --rules \
   -o esphome/my-solar.yaml
 ```
@@ -112,7 +115,7 @@ tools/build.sh esphome/my-solar.yaml
 
 | Каталог / Файл | Призначення |
 |---|---|
-| `esphome/packages/` | Модульні блоки конфігурації: база, API, MQTT, інвертори, BMS, правила |
+| `esphome/packages/` | Модульні блоки конфігурації: база, MQTT, інвертори, BMS, правила |
 | `tools/constructor.py` | Інтерактивний та CLI генератор індивідуальних прошивок |
 | `tools/build.sh` | Кросплатформний скрипт збірки прошивок (`.factory.bin`, `.ota.bin`, `.md5`) |
 | `tools/check-entities.py` | Валідатор сутностей між ESPHome та Home Assistant |
@@ -142,7 +145,7 @@ tools/build.sh esphome/my-solar.yaml
 ## Документація
 
 1. [docs/hardware.md](docs/hardware.md) — Підбір компонентів, розпіновка RJ45, пайка та регулювання живлення.
-2. [docs/mqtt-bridges.md](docs/mqtt-bridges.md) — Підключення до Home Assistant: Native API, локальний MQTT, хмарні мости (flespi, HiveMQ тощо).
+2. [docs/mqtt-bridges.md](docs/mqtt-bridges.md) — Підключення до Home Assistant: локальний MQTT, хмарні мости (flespi, HiveMQ тощо).
 3. [docs/firmware.md](docs/firmware.md) — Робота з прошивками, OTA через інтернет, пошук протоколу.
 4. [docs/home-assistant.md](docs/home-assistant.md) — Встановлення карток HACS, імпорт дашборда та сповіщень.
 5. [docs/onsite-uk.md](docs/onsite-uk.md) — Проста пам'ятка для людини на місці (як підключити кабель і налаштувати Wi-Fi).

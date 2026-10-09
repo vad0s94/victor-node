@@ -1,5 +1,5 @@
 {
-  "name": "PowMr/Victor Standalone (No BMS - Home Assistant API)",
+  "name": "Voltronic PI30 + JBD BMS (Universal MQTT)",
   "version": "1.0.0",
   "home_assistant_domain": "esphome",
   "new_install_prompt_erase": true,
@@ -7,7 +7,7 @@
     {
       "chipFamily": "ESP32",
       "parts": [
-        { "path": "../firmware/powmr-nobms-api.factory.bin", "offset": 0 }
+        { "path": "../firmware/voltronic-jbd-mqtt.factory.bin", "offset": 0 }
       ]
     }
   ]

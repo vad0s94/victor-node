@@ -13,8 +13,8 @@
 - [x] Документація для власника й інструкція для людини на місці.
 - [x] **Відкритий конструктор для масового користувача:**
   - `tools/constructor.py` — інтерактивний wizard та CLI генератор конфігурацій (будь-який інвертор, BMS, плата, транспорт, правила).
-  - Транспорти на вибір: Native HA API (без брокера), Universal MQTT (будь-який брокер), TLS MQTT, flespi.
-  - Готові профілі: `powmr-jk-api`, `powmr-jk-mqtt`, `powmr-nobms-api`, `voltronic-jk-api`, `voltronic-nobms-api`.
+  - Транспорти на вибір: Universal MQTT (локальний брокер Mosquitto), TLS MQTT, flespi.
+  - Готові профілі: `powmr-jk-mqtt`, `powmr-daly-mqtt`, `powmr-jbd-mqtt`, `powmr-nobms-mqtt`, `voltronic-jk-mqtt`, `voltronic-daly-mqtt`, `voltronic-jbd-mqtt`, `voltronic-nobms-mqtt`.
   - Підтримка Improv Serial та ESPHome Web Tools для прошивки з браузера.
 - [x] **GitHub Actions CI/CD:**
   - `.github/workflows/ci.yml` — валідація конфігурацій та сутностей.

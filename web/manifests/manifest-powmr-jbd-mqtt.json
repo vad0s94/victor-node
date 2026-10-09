@@ -1,5 +1,5 @@
 {
-  "name": "Voltronic/Axpert PI30 + JK BMS (Home Assistant API)",
+  "name": "PowMr/Victor + JBD BMS (Universal MQTT)",
   "version": "1.0.0",
   "home_assistant_domain": "esphome",
   "new_install_prompt_erase": true,
@@ -7,7 +7,7 @@
     {
       "chipFamily": "ESP32",
       "parts": [
-        { "path": "../firmware/voltronic-jk-api.factory.bin", "offset": 0 }
+        { "path": "../firmware/powmr-jbd-mqtt.factory.bin", "offset": 0 }
       ]
     }
   ]

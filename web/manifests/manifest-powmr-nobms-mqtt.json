@@ -1,5 +1,5 @@
 {
-  "name": "PowMr/Victor + JK BMS (Home Assistant API)",
+  "name": "PowMr/Victor - Inverter Only (Universal MQTT)",
   "version": "1.0.0",
   "home_assistant_domain": "esphome",
   "new_install_prompt_erase": true,
@@ -7,7 +7,7 @@
     {
       "chipFamily": "ESP32",
       "parts": [
-        { "path": "../firmware/powmr-jk-api.factory.bin", "offset": 0 }
+        { "path": "../firmware/powmr-nobms-mqtt.factory.bin", "offset": 0 }
       ]
     }
   ]

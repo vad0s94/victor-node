@@ -1,24 +1,25 @@
 # Підключення до будь-якого MQTT брокера та налаштування мостів
 
-Цей модуль може передавати дані до Home Assistant двома основними шляхами:
-1. **Нативний Home Assistant API** (`transport-api.yaml`) — для роботи в одній локальній мережі або через VPN (WireGuard/Tailscale). Брокер взагалі не потрібен.
-2. **MQTT** (`transport-mqtt.yaml` або `transport-mqtt-tls.yaml`) — для віддалених об'єктів або роботи через хмару.
+Цей модуль передає всі дані до Home Assistant виключно через **MQTT**:
+1. **Локальний MQTT** (`transport-mqtt.yaml`) — для роботи в одній локальній мережі через локальний брокер Mosquitto (порт 1883) з автоматичним виявленням пристроїв (HA MQTT Auto-Discovery).
+2. **Віддалений MQTT / TLS** (`transport-mqtt-tls.yaml` або `mqtt-flespi.yaml`) — для роботи через захищене з'єднання з хмарним брокером або мостом (порт 8883).
 
 ---
 
-## Варіант 1: Локальний Home Assistant (Native API)
+## Варіант 1: Локальний MQTT брокер (Mosquitto в локальній мережі)
 Якщо ваш ESP32 і сервер Home Assistant знаходяться в одній локальній мережі:
-* Використовуйте пресет з API (наприклад, `powmr-jk-api.yaml` або `voltronic-jk-api.yaml`).
-* Після підключення ESP32 до Wi-Fi, Home Assistant автоматично знайде пристрій через mDNS у **Settings → Devices & Services**.
-* Не потрібно налаштовувати жодних MQTT брокерів чи мостів!
+1. Використовуйте стандартний MQTT пресет (наприклад, `powmr-jk-mqtt.yaml` або згенерований через веб-конструктор).
+2. Вкажіть IP-адресу вашого локального Home Assistant / Mosquitto брокера (порт `1883`).
+3. За потреби вкажіть логін та пароль користувача Home Assistant / Mosquitto.
+4. Завдяки вбудованому `discovery: true` Home Assistant автоматично виявить усі сенсори, перемикачі та контроли через інтеграцію **MQTT**.
 
 ---
 
-## Варіант 2: Пряме підключення до вашого MQTT брокера
-Якщо у вас є власний Mosquitto або EMQX з відкритою IP-адресою:
-1. Задайте `mqtt_broker` (IP або хост) та `mqtt_port` (1883 для TCP або 8883 для TLS).
-2. За потреби вкажіть `mqtt_username` та `mqtt_password`.
-3. Вкажіть `discovery_prefix: homeassistant` — сенсори самі з'являться в Home Assistant.
+## Варіант 2: Пряме підключення до зовнішнього MQTT брокера (з TLS)
+Якщо у вас є власний публічний Mosquitto, EMQX або хмарний брокер з підтримкою TLS:
+1. Задайте `mqtt_broker` (хост) та `mqtt_port` (`8883` для TLS).
+2. Вкажіть облікові дані (`mqtt_username`, `mqtt_password`) або токен авторизації.
+3. Вкажіть `discovery_prefix: homeassistant` — сенсори автоматично реєструються в Home Assistant.
 
 ---
 

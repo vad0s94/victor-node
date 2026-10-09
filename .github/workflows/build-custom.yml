@@ -40,11 +40,10 @@ on:
         required: true
         type: choice
         options:
-          - api
           - mqtt
           - mqtt_tls
           - flespi
-        default: api
+        default: mqtt
       rules:
         description: "Enable on-device battery SOC rules (PowMr with BMS only)"
         required: false

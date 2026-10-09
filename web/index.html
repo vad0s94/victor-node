@@ -219,33 +219,33 @@
       <div id="ble-scan-result" style="margin-top: 10px; font-size: 13px; display: none;"></div>
     </div>
 
-    <!-- Крок 3: Транспорт -->
+    <!-- Крок 3: MQTT Брокер -->
     <div class="step-title">
-      <span class="step-badge">3</span> Як підключатимете до Home Assistant?
+      <span class="step-badge">3</span> Підключення по MQTT
     </div>
     <div class="options-grid" id="transport-options">
-      <div class="option-btn selected" data-value="api">
-        <span class="option-title">Home Assistant API (Рекомендовано)</span>
-        <span class="option-desc">Пряме підключення в локальній мережі або через VPN, без MQTT</span>
+      <div class="option-btn selected" data-value="mqtt">
+        <span class="option-title">Локальний MQTT (Рекомендовано)</span>
+        <span class="option-desc">Локальний Mosquitto / EMQX брокер у вашій мережі (порт 1883)</span>
       </div>
-      <div class="option-btn" data-value="mqtt">
-        <span class="option-title">MQTT Брокер</span>
-        <span class="option-desc">Для систем з MQTT або віддаленого моніторингу через мости</span>
+      <div class="option-btn" data-value="mqtt_tls">
+        <span class="option-title">Віддалений MQTT (TLS)</span>
+        <span class="option-desc">Хмарний брокер або віддалений сервер через захищене TLS з'єднання (порт 8883)</span>
       </div>
     </div>
 
     <!-- Підсумок конфігурації -->
     <div class="summary-box">
-      <div class="summary-title" id="summary-title">Обрано: PowMr / Victor + JK BMS (Home Assistant API)</div>
+      <div class="summary-title" id="summary-title">Обрано: PowMr / Victor + JK BMS (Локальний MQTT)</div>
       <div class="summary-desc" id="summary-desc">
         Повний комплект: зчитування даних інвертора по RS232, зчитування напруг кожної комірки батареї по Bluetooth,
-        автоматичні правила захисту акумулятора за SOC на борту ESP32, миттєве автовиявлення в Home Assistant.
+        автоматичні правила захисту акумулятора за SOC на борту ESP32, публікація даних у MQTT.
       </div>
     </div>
 
     <!-- Кнопка прошивки -->
     <div class="install-area">
-      <esp-web-install-button id="install-btn" manifest="manifests/manifest-powmr-jk-api.json">
+      <esp-web-install-button id="install-btn" manifest="manifests/manifest-powmr-jk-mqtt.json">
         <button slot="activate" style="background:#0284c7;color:white;padding:12px 28px;border:none;border-radius:10px;font-size:1.05rem;font-weight:600;cursor:pointer;">
           ПРОШИТИ ЧЕРЕЗ USB (В ОДИН КЛІК)
         </button>
@@ -271,48 +271,49 @@
 
   let selectedInverter = 'powmr';
   let selectedBms = 'jk';
-  let selectedTransport = 'api';
+  let selectedTransport = 'mqtt';
 
   function updateManifest() {
     let profile = '';
     let title = '';
     let desc = '';
+    const transportLabel = selectedTransport === 'mqtt' ? 'Локальний MQTT' : 'Віддалений MQTT (TLS)';
 
     if (selectedInverter === 'powmr') {
       if (selectedBms === 'jk') {
-        profile = selectedTransport === 'api' ? 'powmr-jk-api' : 'powmr-jk-mqtt';
-        title = `PowMr / Victor + JK BMS (${selectedTransport === 'api' ? 'HA API' : 'MQTT'})`;
-        desc = `Повний моніторинг інвертора Modbus 2341, 45+ параметрів JK BMS по BLE, автономні правила заряду на ESP32. Підключення через ${selectedTransport.toUpperCase()}.`;
+        profile = 'powmr-jk-mqtt';
+        title = `PowMr / Victor + JK BMS (${transportLabel})`;
+        desc = `Повний моніторинг інвертора Modbus 2341, параметри JK BMS по BLE, автономні правила заряду на ESP32. Публікація в MQTT (${transportLabel}).`;
       } else if (selectedBms === 'daly') {
-        profile = 'powmr-daly-api';
-        title = 'PowMr / Victor + Daly BMS (HA API)';
-        desc = 'Моніторинг інвертора PowMr разом з акумулятором на базі Daly Smart BMS по Bluetooth. Контроль комірок та температур.';
+        profile = 'powmr-daly-mqtt';
+        title = `PowMr / Victor + Daly BMS (${transportLabel})`;
+        desc = `Моніторинг інвертора PowMr разом з акумулятором на базі Daly Smart BMS по Bluetooth. Публікація в MQTT (${transportLabel}).`;
       } else if (selectedBms === 'jbd') {
-        profile = 'powmr-jbd-api';
-        title = 'PowMr / Victor + JBD / Xiaoxiang BMS (HA API)';
-        desc = 'Моніторинг інвертора PowMr та батареї JBD/Liontron/Overkill по BLE з керуванням ключами заряду/розряду.';
+        profile = 'powmr-jbd-mqtt';
+        title = `PowMr / Victor + JBD / Xiaoxiang BMS (${transportLabel})`;
+        desc = `Моніторинг інвертора PowMr та батареї JBD/Liontron по BLE з керуванням ключами заряду/розряду. Публікація в MQTT (${transportLabel}).`;
       } else {
-        profile = 'powmr-nobms-api';
-        title = 'PowMr / Victor (Тільки інвертор, без BMS)';
-        desc = 'Легка прошивка для інверторів PowMr/Victor. Bluetooth вимкнено, контролюються всі параметри інвертора, навантаження та сонячних панелей.';
+        profile = 'powmr-nobms-mqtt';
+        title = `PowMr / Victor (Тільки інвертор, без BMS, ${transportLabel})`;
+        desc = `Легка прошивка для інверторів PowMr/Victor. Bluetooth вимкнено, контролюються всі параметри інвертора, навантаження та панелей через MQTT.`;
       }
     } else {
       if (selectedBms === 'jk') {
-        profile = 'voltronic-jk-api';
-        title = 'Voltronic / Axpert PI30 + JK BMS (HA API)';
-        desc = 'Підтримка інверторів родини Voltronic (Axpert, EASun, SP-3200) по протоколу PI30 разом з акумулятором JK BMS по Bluetooth.';
+        profile = 'voltronic-jk-mqtt';
+        title = `Voltronic / Axpert PI30 + JK BMS (${transportLabel})`;
+        desc = `Підтримка інверторів Voltronic (Axpert, EASun, SP-3200) по протоколу PI30 разом з акумулятором JK BMS по BLE через MQTT.`;
       } else if (selectedBms === 'daly') {
-        profile = 'voltronic-daly-api';
-        title = 'Voltronic / Axpert PI30 + Daly BMS (HA API)';
-        desc = 'Моніторинг інверторів Voltronic/Axpert разом з Daly Smart BMS по Bluetooth.';
+        profile = 'voltronic-daly-mqtt';
+        title = `Voltronic / Axpert PI30 + Daly BMS (${transportLabel})`;
+        desc = `Моніторинг інверторів Voltronic/Axpert разом з Daly Smart BMS по Bluetooth через MQTT.`;
       } else if (selectedBms === 'jbd') {
-        profile = 'voltronic-jbd-api';
-        title = 'Voltronic / Axpert PI30 + JBD BMS (HA API)';
-        desc = 'Моніторинг інверторів Voltronic/Axpert разом з JBD / Xiaoxiang BMS по Bluetooth.';
+        profile = 'voltronic-jbd-mqtt';
+        title = `Voltronic / Axpert PI30 + JBD BMS (${transportLabel})`;
+        desc = `Моніторинг інверторів Voltronic/Axpert разом з JBD / Xiaoxiang BMS по Bluetooth через MQTT.`;
       } else {
-        profile = 'voltronic-nobms-api';
-        title = 'Voltronic / Axpert PI30 (Тільки інвертор, без BMS)';
-        desc = 'Моніторинг інверторів Voltronic/Axpert без BMS. Читання напруг мережі, сонця, навантаження та режимів роботи.';
+        profile = 'voltronic-nobms-mqtt';
+        title = `Voltronic / Axpert PI30 (Тільки інвертор, без BMS, ${transportLabel})`;
+        desc = `Моніторинг інверторів Voltronic/Axpert без BMS. Читання напруг мережі, сонця, навантаження через MQTT.`;
       }
     }
 

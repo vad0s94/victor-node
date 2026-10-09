@@ -1,5 +1,5 @@
 {
-  "name": "Voltronic PI30 + Daly BMS (Home Assistant API)",
+  "name": "Voltronic PI30 - Inverter Only (Universal MQTT)",
   "version": "1.0.0",
   "home_assistant_domain": "esphome",
   "new_install_prompt_erase": true,
@@ -7,7 +7,7 @@
     {
       "chipFamily": "ESP32",
       "parts": [
-        { "path": "../firmware/voltronic-daly-api.factory.bin", "offset": 0 }
+        { "path": "../firmware/voltronic-nobms-mqtt.factory.bin", "offset": 0 }
       ]
     }
   ]

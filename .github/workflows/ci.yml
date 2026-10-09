@@ -40,14 +40,14 @@ jobs:
 
       - name: Test constructor presets generation
         run: |
-          python3 tools/constructor.py --preset powmr-jk-api -o esphome/test-powmr-jk-api.yaml
-          python3 tools/constructor.py --preset powmr-daly-api -o esphome/test-powmr-daly-api.yaml
-          python3 tools/constructor.py --preset powmr-jbd-api -o esphome/test-powmr-jbd-api.yaml
-          python3 tools/constructor.py --preset powmr-nobms-api -o esphome/test-powmr-nobms-api.yaml
-          python3 tools/constructor.py --preset voltronic-jk-api -o esphome/test-voltronic-jk-api.yaml
-          python3 tools/constructor.py --preset voltronic-daly-api -o esphome/test-voltronic-daly-api.yaml
-          python3 tools/constructor.py --preset voltronic-jbd-api -o esphome/test-voltronic-jbd-api.yaml
-          python3 tools/constructor.py --preset voltronic-nobms-api -o esphome/test-voltronic-nobms-api.yaml
+          python3 tools/constructor.py --preset powmr-jk-mqtt -o esphome/test-powmr-jk-mqtt.yaml
+          python3 tools/constructor.py --preset powmr-daly-mqtt -o esphome/test-powmr-daly-mqtt.yaml
+          python3 tools/constructor.py --preset powmr-jbd-mqtt -o esphome/test-powmr-jbd-mqtt.yaml
+          python3 tools/constructor.py --preset powmr-nobms-mqtt -o esphome/test-powmr-nobms-mqtt.yaml
+          python3 tools/constructor.py --preset voltronic-jk-mqtt -o esphome/test-voltronic-jk-mqtt.yaml
+          python3 tools/constructor.py --preset voltronic-daly-mqtt -o esphome/test-voltronic-daly-mqtt.yaml
+          python3 tools/constructor.py --preset voltronic-jbd-mqtt -o esphome/test-voltronic-jbd-mqtt.yaml
+          python3 tools/constructor.py --preset voltronic-nobms-mqtt -o esphome/test-voltronic-nobms-mqtt.yaml
 
       - name: Validate ESPHome configurations
         run: |
@@ -55,7 +55,7 @@ jobs:
           DALY_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/daly-src/components"
           JBD_SRC_ABS="$GITHUB_WORKSPACE/tools/ref/jbd-src/components"
           cd esphome
-          for cfg in victor.yaml victor-pi30.yaml powmr-jk-api.yaml powmr-jk-mqtt.yaml powmr-nobms-api.yaml voltronic-jk-api.yaml voltronic-nobms-api.yaml test-*.yaml; do
+          for cfg in victor.yaml victor-pi30.yaml powmr-jk-mqtt.yaml test-*.yaml; do
             echo "==> Validating $cfg..."
             esphome \
               -s jk_bms_source "$JK_SRC_ABS" \

@@ -2,18 +2,15 @@
 """Firmware Configuration Constructor for Inverter & BMS Gateways.
 
 Generates custom ESPHome configurations for any supported inverter, BMS
-(JK BMS, Daly BMS, JBD/Xiaoxiang BMS, single or parallel packs), board,
-and transport mechanism (Native HA API, standard MQTT, TLS MQTT, flespi).
+(JK BMS, Daly BMS, JBD/Xiaoxiang BMS), board,
+and transport mechanism (standard MQTT, TLS MQTT, flespi).
 
 Usage:
   # Interactive wizard:
   python3 tools/constructor.py -i
 
   # Using a preset:
-  python3 tools/constructor.py --preset powmr-jk-api -o esphome/my-node.yaml
-
-  # Parallel battery packs (2x JK BMS):
-  python3 tools/constructor.py --preset powmr-2xjk-api -o esphome/my-2xjk.yaml
+  python3 tools/constructor.py --preset powmr-jk-mqtt -o esphome/my-node.yaml
 
   # Custom command line:
   python3 tools/constructor.py \
@@ -21,7 +18,7 @@ Usage:
     --board esp32dev \
     --inverter powmr_2341 \
     --bms daly_ble \
-    --transport api \
+    --transport mqtt \
     --rules \
     -o esphome/my-inverter.yaml
 """
@@ -32,14 +29,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 PRESETS = {
-    "powmr-jk-api": {
-        "description": "PowMr/Victor (Modbus 2341) + JK BMS (BLE) + Native Home Assistant API",
-        "inverter": "powmr_2341",
-        "bms": "jk_ble",
-        "bms_packs": 1,
-        "transport": "api",
-        "rules": True,
-    },
     "powmr-jk-mqtt": {
         "description": "PowMr/Victor (Modbus 2341) + JK BMS (BLE) + Universal MQTT",
         "inverter": "powmr_2341",
@@ -48,60 +37,60 @@ PRESETS = {
         "transport": "mqtt",
         "rules": True,
     },
-    "powmr-daly-api": {
-        "description": "PowMr/Victor (Modbus 2341) + Daly BMS (BLE) + Native Home Assistant API",
+    "powmr-daly-mqtt": {
+        "description": "PowMr/Victor (Modbus 2341) + Daly BMS (BLE) + Universal MQTT",
         "inverter": "powmr_2341",
         "bms": "daly_ble",
         "bms_packs": 1,
-        "transport": "api",
+        "transport": "mqtt",
         "rules": True,
     },
-    "powmr-jbd-api": {
-        "description": "PowMr/Victor (Modbus 2341) + JBD / Xiaoxiang BMS (BLE) + Native Home Assistant API",
+    "powmr-jbd-mqtt": {
+        "description": "PowMr/Victor (Modbus 2341) + JBD / Xiaoxiang BMS (BLE) + Universal MQTT",
         "inverter": "powmr_2341",
         "bms": "jbd_ble",
         "bms_packs": 1,
-        "transport": "api",
+        "transport": "mqtt",
         "rules": True,
     },
-    "powmr-nobms-api": {
-        "description": "PowMr/Victor (Modbus 2341) - Inverter Only (No BMS) + Native HA API",
+    "powmr-nobms-mqtt": {
+        "description": "PowMr/Victor (Modbus 2341) - Inverter Only (No BMS) + Universal MQTT",
         "inverter": "powmr_2341",
         "bms": "none",
         "bms_packs": 1,
-        "transport": "api",
+        "transport": "mqtt",
         "rules": False,
     },
-    "voltronic-jk-api": {
-        "description": "Voltronic PI30 (Axpert/EASun) + JK BMS (BLE) + Native HA API",
+    "voltronic-jk-mqtt": {
+        "description": "Voltronic PI30 (Axpert/EASun) + JK BMS (BLE) + Universal MQTT",
         "inverter": "pi30",
         "bms": "jk_ble",
         "bms_packs": 1,
-        "transport": "api",
+        "transport": "mqtt",
         "rules": False,
     },
-    "voltronic-daly-api": {
-        "description": "Voltronic PI30 (Axpert/EASun) + Daly BMS (BLE) + Native HA API",
+    "voltronic-daly-mqtt": {
+        "description": "Voltronic PI30 (Axpert/EASun) + Daly BMS (BLE) + Universal MQTT",
         "inverter": "pi30",
         "bms": "daly_ble",
         "bms_packs": 1,
-        "transport": "api",
+        "transport": "mqtt",
         "rules": False,
     },
-    "voltronic-jbd-api": {
-        "description": "Voltronic PI30 (Axpert/EASun) + JBD BMS (BLE) + Native HA API",
+    "voltronic-jbd-mqtt": {
+        "description": "Voltronic PI30 (Axpert/EASun) + JBD BMS (BLE) + Universal MQTT",
         "inverter": "pi30",
         "bms": "jbd_ble",
         "bms_packs": 1,
-        "transport": "api",
+        "transport": "mqtt",
         "rules": False,
     },
-    "voltronic-nobms-api": {
-        "description": "Voltronic PI30 (Axpert/EASun) - Inverter Only (No BMS) + Native HA API",
+    "voltronic-nobms-mqtt": {
+        "description": "Voltronic PI30 (Axpert/EASun) - Inverter Only (No BMS) + Universal MQTT",
         "inverter": "pi30",
         "bms": "none",
         "bms_packs": 1,
-        "transport": "api",
+        "transport": "mqtt",
         "rules": False,
     },
     "probe-mqtt": {
@@ -126,7 +115,7 @@ def build_config(
     bms="jk_ble",
     bms_packs=1,
     bms_protocol="JK02_32S",
-    transport="api",
+    transport="mqtt",
     mqtt_broker="192.168.1.100",
     mqtt_port="1883",
     mqtt_username="",
@@ -149,9 +138,7 @@ def build_config(
         "led_pin": led_pin,
     }
 
-    if transport == "api":
-        subs["api_reboot_timeout"] = "15min"
-    elif transport in ("mqtt", "mqtt_tls"):
+    if transport in ("mqtt", "mqtt_tls"):
         subs["mqtt_broker"] = f'"{mqtt_broker}"'
         subs["mqtt_port"] = f'"{mqtt_port}"'
         subs["mqtt_username"] = f'"{mqtt_username}"'
@@ -211,14 +198,12 @@ def build_config(
         ("base", "packages/base.yaml"),
     ]
 
-    if transport == "api":
-        packages.append(("transport", "packages/transport-api.yaml"))
-    elif transport == "mqtt":
-        packages.append(("transport", "packages/transport-mqtt.yaml"))
-    elif transport == "mqtt_tls":
+    if transport == "mqtt_tls":
         packages.append(("transport", "packages/transport-mqtt-tls.yaml"))
     elif transport == "flespi":
         packages.append(("mqtt", "packages/mqtt-flespi.yaml"))
+    else:
+        packages.append(("transport", "packages/transport-mqtt.yaml"))
 
     packages.append(("ota_remote", "packages/ota-remote.yaml"))
     packages.append(("status_led", "packages/status-led.yaml"))
@@ -231,10 +216,7 @@ def build_config(
     # BMS Packages
     if bms != "none":
         bms_prefix = {"jk_ble": "jk", "daly_ble": "daly", "jbd_ble": "jbd"}.get(bms)
-        if bms_packs == 2:
-            packages.append(("bms", f"packages/bms-{bms_prefix}-ble-parallel.yaml"))
-        else:
-            packages.append(("bms", f"packages/bms-{bms_prefix}-ble.yaml"))
+        packages.append(("bms", f"packages/bms-{bms_prefix}-ble.yaml"))
 
     if rules and inverter == "powmr_2341" and bms != "none":
         packages.append(("rules", "packages/rules-soc.yaml"))
@@ -318,13 +300,12 @@ def interactive_wizard():
         print("    ✓ Після прошивки ви зможете обрати знайдений акумулятор кнопкою в Home Assistant")
         print("      або у локальному вебінтерфейсі ESP32 (http://<ip>/), без ручного введення MAC.")
 
-    print("\n4. Select Transport / Communication:")
-    print("  [1] Native Home Assistant API (Direct connection, auto-discovered, NO broker required!)")
-    print("  [2] Standard MQTT (Local Mosquitto, EMQX, HiveMQ, etc. port 1883)")
-    print("  [3] MQTT over TLS (Cloud broker or custom TLS broker, port 8883)")
-    print("  [4] flespi MQTT (Cloud TLS bridge for remote sites behind CGNAT)")
+    print("\n4. Select MQTT Transport / Communication:")
+    print("  [1] Local MQTT (Mosquitto / LAN broker on port 1883)")
+    print("  [2] Remote MQTT over TLS (Cloud broker or remote server on port 8883)")
+    print("  [3] flespi MQTT (Remote TLS bridge with token)")
     t_choice = input("Choice [1]: ").strip() or "1"
-    transport = {"1": "api", "2": "mqtt", "3": "mqtt_tls", "4": "flespi"}.get(t_choice, "api")
+    transport = {"1": "mqtt", "2": "mqtt_tls", "3": "flespi"}.get(t_choice, "mqtt")
 
     mqtt_broker = "192.168.1.100"
     mqtt_port = "1883"
@@ -386,9 +367,9 @@ def main():
     parser.add_argument("--inverter-tx", default="GPIO16", help="TX pin (default: GPIO16)")
     parser.add_argument("--inverter-rx", default="GPIO17", help="RX pin (default: GPIO17)")
     parser.add_argument("--bms", default="jk_ble", choices=["jk_ble", "daly_ble", "jbd_ble", "none"], help="BMS type")
-    parser.add_argument("--bms-packs", type=int, default=1, choices=[1, 2], help="Number of battery packs (1 or 2 parallel packs)")
+    parser.add_argument("--bms-packs", type=int, default=1, choices=[1], help="Number of battery packs (default: 1)")
     parser.add_argument("--bms-protocol", default="JK02_32S", choices=["JK02_32S", "JK02_24S"], help="JK BMS protocol")
-    parser.add_argument("--transport", default="api", choices=["api", "mqtt", "mqtt_tls", "flespi"], help="Transport")
+    parser.add_argument("--transport", default="mqtt", choices=["mqtt", "mqtt_tls", "flespi"], help="MQTT Transport (default: mqtt)")
     parser.add_argument("--mqtt-broker", default="192.168.1.100", help="MQTT broker host")
     parser.add_argument("--mqtt-port", default="1883", help="MQTT broker port")
     parser.add_argument("--mqtt-username", default="", help="MQTT username")
