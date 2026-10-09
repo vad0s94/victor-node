@@ -1,0 +1,94 @@
+# Inverter over RS232 Modbus RTU, protocol 2341 (SmartESS / WIFI-VM family:
+# PowMr POW-HVM, Victor NM-ECO and other rebrands of the same platform).
+#
+# The register map, sensors, selects and daily energy counters come from
+# aver-ua/esphome-hybrid-inverter-2341 (fork of odya/esphome-powmr-hybrid-inverter),
+# vendored at one commit with a minimal ESPHome 2026.9 compatibility patch
+# (see vendor/aver-ua/NOTICE.md). This file only adds what the upstream project
+# lacks: link status, optional Modbus function 0x10 writes and an estimated grid import.
+#
+# Expects substitutions: inverter_tx_pin, inverter_rx_pin, inverter_voltage_offset,
+# update_interval, select_skip_updates, modbus_write_multiple.
+
+packages:
+  powmr_inverter: !include ../vendor/aver-ua/modules/inverter.yaml
+  powmr_info: !include ../vendor/aver-ua/modules/inverter-info.yaml
+  powmr_6_2kw_48v: !include ../vendor/aver-ua/modules/pow-hvm6.2m-48v.yaml
+  powmr_common: !include ../vendor/aver-ua/modules/common-sensors.yaml
+
+esphome:
+  includes:
+    - vendor/aver-ua/helpers
+
+modbus_controller:
+  - id: !extend smg_inverter
+    on_online:
+      then:
+        - binary_sensor.template.publish:
+            id: inverter_link
+            state: true
+    on_offline:
+      then:
+        - binary_sensor.template.publish:
+            id: inverter_link
+            state: false
+
+binary_sensor:
+  - platform: template
+    id: inverter_link
+    name: "Inverter Link"
+    device_class: connectivity
+    entity_category: diagnostic
+
+# Some firmware revisions of this platform accept writes only with Modbus
+# function 0x10 (write multiple registers). Set modbus_write_multiple: "true"
+# in the main config if setting changes are ignored by the inverter.
+select:
+  - id: !extend charger_source_priority_select
+    use_write_multiple: ${modbus_write_multiple}
+  - id: !extend output_source_priority_select
+    use_write_multiple: ${modbus_write_multiple}
+  - id: !extend max_total_charge_current
+    use_write_multiple: ${modbus_write_multiple}
+  - id: !extend utility_charge_current
+    use_write_multiple: ${modbus_write_multiple}
+
+number:
+  - id: !extend back_to_utility_source_voltage
+    use_write_multiple: ${modbus_write_multiple}
+  - id: !extend back_to_battery_source_voltage
+    use_write_multiple: ${modbus_write_multiple}
+  - id: !extend bulk_charging_voltage
+    use_write_multiple: ${modbus_write_multiple}
+  - id: !extend floating_charging_voltage
+    use_write_multiple: ${modbus_write_multiple}
+  - id: !extend low_dc_cut_off_voltage
+    use_write_multiple: ${modbus_write_multiple}
+
+sensor:
+  # The inverter reports no grid power. Energy balance gives an estimate:
+  # grid = load + battery charge - PV - battery discharge (inverter losses are
+  # included in the result, so it reads a few percent high).
+  - platform: template
+    id: grid_power_estimated
+    name: "Grid Power Estimated"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: ${update_interval}
+    lambda: |-
+      if (!id(grid_active).state) return 0.0f;
+      float g = id(load_power).state + id(battery_charge_power).state
+              - id(pv_power).state - id(battery_discharge_power).state;
+      return std::isnan(g) ? 0.0f : std::max(0.0f, g);
+  - platform: total_daily_energy
+    name: "Grid Daily Energy Estimated"
+    power_id: grid_power_estimated
+    restore: true
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001

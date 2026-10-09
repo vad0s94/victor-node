@@ -1,0 +1,141 @@
+# Home Assistant package for the Victor remote node (Дача).
+#
+# Install: copy to /config/packages/victor.yaml and make sure configuration.yaml has
+#   homeassistant:
+#     packages: !include_dir_named packages
+#
+# Notifications go to notify.all_devices (already defined in notifications.yaml).
+# To also notify the relative, add their mobile_app notifier to that group or
+# duplicate the action with notify.mobile_app_<their_phone>.
+#
+# Entity ids assume the node name "victor" with discovery_object_id_generator:
+# device_name (sensor.victor_<entity>). Check Settings -> Devices -> Victor after
+# the first connection and adjust if Home Assistant named something differently.
+
+automation:
+  - id: victor_node_offline
+    alias: "Дача: вузол офлайн"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.victor_controller_status
+        to: ["unavailable", "off"]
+        for: "00:10:00"
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача"
+          message: "Блок моніторингу не на зв'язку вже 10 хв (немає Wi-Fi, інтернету або живлення)."
+
+  - id: victor_node_online
+    alias: "Дача: вузол знову онлайн"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.victor_controller_status
+        from: ["unavailable", "off"]
+        to: "on"
+        for: "00:01:00"
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача"
+          message: "Блок моніторингу знову на зв'язку."
+
+  - id: victor_soc_low
+    alias: "Дача: батарея розряджена"
+    mode: single
+    triggers:
+      - trigger: numeric_state
+        entity_id: sensor.victor_bms_state_of_charge
+        below: 20
+        for: "00:05:00"
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача"
+          message: "Заряд батареї {{ states('sensor.victor_bms_state_of_charge') | int(0) }}%."
+
+  - id: victor_grid_lost
+    alias: "Дача: зникла мережа"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.victor_grid_active
+        from: "on"
+        to: "off"
+        for: "00:01:00"
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача"
+          message: "Зникла мережа, працюємо від батареї ({{ states('sensor.victor_bms_state_of_charge') | int(0) }}%)."
+
+  - id: victor_grid_back
+    alias: "Дача: мережа повернулась"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.victor_grid_active
+        from: "off"
+        to: "on"
+        for: "00:01:00"
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача"
+          message: "Мережа повернулась."
+
+  - id: victor_inverter_errors
+    alias: "Дача: помилка інвертора"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.victor_errors
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.to_state.state not in ['None', 'unknown', 'unavailable', ''] }}"
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача: інвертор"
+          message: "Помилка інвертора: {{ trigger.to_state.state }}"
+
+  - id: victor_bms_errors
+    alias: "Дача: помилка BMS"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: sensor.victor_bms_errors
+    conditions:
+      # "Modify password in time" is JK's reminder about the default BLE password, not a fault.
+      - condition: template
+        value_template: >
+          {{ trigger.to_state.state not in ['', 'None', 'unknown', 'unavailable', 'Modify password in time'] }}
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача: BMS"
+          message: "BMS повідомляє: {{ trigger.to_state.state }}"
+
+  - id: victor_link_lost
+    alias: "Дача: немає зв'язку з інвертором або BMS"
+    mode: single
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.victor_inverter_link
+        to: "off"
+        for: "00:05:00"
+        id: inverter
+      - trigger: state
+        entity_id: binary_sensor.victor_bms_online_status
+        to: "off"
+        for: "00:05:00"
+        id: bms
+    actions:
+      - action: notify.all_devices
+        data:
+          title: "Дача"
+          message: >
+            {{ 'Блок не чує інвертор (кабель RJ45?)' if trigger.id == 'inverter'
+               else 'Блок не бачить BMS по Bluetooth' }} вже 5 хв.

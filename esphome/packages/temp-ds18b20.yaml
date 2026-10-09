@@ -1,0 +1,11 @@
+# Optional: DS18B20 probe for the cabinet/room temperature next to the inverter
+# (the BMS only measures the battery). Data on GPIO4 with a 4.7 kOhm pull-up to 3V3.
+
+one_wire:
+  - platform: gpio
+    pin: GPIO4
+
+sensor:
+  - platform: dallas_temp
+    name: "Cabinet Temperature"
+    update_interval: 60s

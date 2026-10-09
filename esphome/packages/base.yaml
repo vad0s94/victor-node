@@ -1,0 +1,89 @@
+# Core of every Victor node firmware: board, Wi-Fi with on-site fallback,
+# local OTA, time, web page and diagnostics.
+#
+# Expects substitutions: node_name, friendly_name, area, board, led_pin.
+
+esphome:
+  name: ${node_name}
+  friendly_name: ${friendly_name}
+  area: ${area}
+  min_version: 2026.9.0
+
+esp32:
+  board: ${board}
+  framework:
+    type: esp-idf
+
+preferences:
+  # Daily energy counters and settings survive reboots; writing every 5 min
+  # keeps flash wear negligible and loses at most 5 min of counting on power loss.
+  flash_write_interval: 5min
+
+logger:
+  level: INFO
+  logs:
+    esp32_ble_tracker: WARN
+    esp32_ble_client: WARN
+    modbus_controller: WARN
+    component: ERROR
+
+wifi:
+  networks:
+    - ssid: !secret wifi_remote_ssid
+      password: !secret wifi_remote_password
+    - ssid: !secret wifi_home_ssid
+      password: !secret wifi_home_password
+  # Keep running (and keep the local rules working) when Wi-Fi is gone:
+  # never reboot because of a missing access point.
+  reboot_timeout: 0s
+  ap:
+    ssid: "${friendly_name} Setup"
+    password: !secret ap_password
+    ap_timeout: 1min
+
+# Opens a Wi-Fi setup page when someone joins the "<name> Setup" hotspot.
+captive_portal:
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+safe_mode:
+
+time:
+  - platform: sntp
+    id: sntp_time
+    timezone: "EET-2EEST,M3.5.0/3,M10.5.0/4"
+
+web_server:
+  port: 80
+  version: 3
+  auth:
+    type: digest
+    username: !secret web_username
+    password: !secret web_password
+
+debug:
+  update_interval: 60s
+
+sensor:
+  - platform: debug
+    free:
+      name: "Heap Free"
+      entity_category: diagnostic
+    min_free:
+      name: "Heap Min Free"
+      entity_category: diagnostic
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      entity_category: diagnostic
+    ssid:
+      name: "Connected SSID"
+      entity_category: diagnostic
+  - platform: version
+    name: "Firmware Version"
+    hide_timestamp: false
+    entity_category: diagnostic

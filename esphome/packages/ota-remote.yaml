@@ -1,0 +1,60 @@
+# Remote firmware update over the internet: the node downloads a firmware
+# image from an HTTPS URL. Used when the node is 300 km away and only reachable
+# through the cloud broker. tools/ota-remote.sh sets the URL/MD5 and presses
+# the button via MQTT.
+#
+# Flow: put firmware.ota.bin somewhere reachable over HTTPS -> set "OTA URL"
+# and "OTA MD5" -> press "Flash Firmware From URL". The node verifies the MD5,
+# flashes and reboots; on a bad image safe_mode keeps the previous firmware.
+
+http_request:
+  verify_ssl: true
+  timeout: 30s
+
+ota:
+  - platform: http_request
+
+text:
+  - platform: template
+    id: ota_url
+    name: "OTA URL"
+    icon: mdi:link-variant
+    entity_category: config
+    mode: text
+    max_length: 250
+    optimistic: true
+    restore_value: false
+    initial_value: ""
+  - platform: template
+    id: ota_md5
+    name: "OTA MD5"
+    icon: mdi:pound
+    entity_category: config
+    mode: text
+    min_length: 0
+    max_length: 32
+    optimistic: true
+    restore_value: false
+    initial_value: ""
+
+button:
+  - platform: template
+    name: "Flash Firmware From URL"
+    icon: mdi:cloud-download
+    entity_category: config
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(ota_url).state.size() > 8 && id(ota_md5).state.size() == 32;'
+          then:
+            - logger.log:
+                level: WARN
+                format: "Remote OTA from %s"
+                args: ['id(ota_url).state.c_str()']
+            - ota.http_request.flash:
+                url: !lambda 'return id(ota_url).state;'
+                md5: !lambda 'return id(ota_md5).state;'
+          else:
+            - logger.log:
+                level: ERROR
+                format: "Remote OTA refused: set OTA URL and a 32-char OTA MD5 first"

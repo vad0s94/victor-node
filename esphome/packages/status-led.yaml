@@ -1,0 +1,31 @@
+# On-board LED tells the person on site what state the node is in:
+#   steady on      - Wi-Fi and the cloud broker are connected (all good)
+#   slow blink 1 s - Wi-Fi is connected, cloud broker is not
+#   fast blink     - no Wi-Fi (the "<name> Setup" hotspot is up after 1 min)
+#
+# Expects substitution: led_pin.
+
+output:
+  - platform: gpio
+    id: status_led_out
+    pin: ${led_pin}
+
+globals:
+  - id: led_tick
+    type: uint8_t
+    initial_value: "0"
+
+interval:
+  - interval: 200ms
+    then:
+      - lambda: |-
+          id(led_tick) = (id(led_tick) + 1) % 10;
+          bool on;
+          if (!wifi::global_wifi_component->is_connected()) {
+            on = id(led_tick) % 2 == 0;                   // 2.5 Hz
+          } else if (!id(mqtt_client).is_connected()) {
+            on = id(led_tick) < 5;                        // 1 Hz
+          } else {
+            on = true;
+          }
+          if (on) id(status_led_out).turn_on(); else id(status_led_out).turn_off();

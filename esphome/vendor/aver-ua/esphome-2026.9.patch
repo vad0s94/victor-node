@@ -1,0 +1,11 @@
+diff -ru /tmp/aver-orig/inverter.yaml modules/inverter.yaml
+--- /tmp/aver-orig/inverter.yaml	2026-10-08 21:28:37
++++ modules/inverter.yaml	2026-10-08 21:28:48
+@@ -307,7 +307,6 @@
+     modbus_controller_id: smg_inverter
+     name: "Load Percent"
+     address: 4515
+-    register_count: 15
+     register_type: holding
+     value_type: U_WORD
+     unit_of_measurement: "%"

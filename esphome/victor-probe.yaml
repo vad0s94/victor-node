@@ -1,0 +1,179 @@
+# Protocol finder: sweeps PI30 / PI30MAX / PI30REVO / PI41 / PI18 / PI17 / PI16 /
+# Qx / Modbus RTU at 2400-19200 baud and logs every reply. Logs go to MQTT
+# (victor/node/debug), so the sweep can be read from home through the bridge:
+#   tools/mqtt-log.sh
+# Any "RX" line means the inverter answered; the [BAUD n] and ">>>>>" lines just
+# above it tell which family and speed worked.
+#
+# The uart debug dump and the sweep scripts are taken from Travis90x/esphome-pipsolar
+# (Apache-2.0), diagnostics/ESP32_ESP8266_test_protocol_solar_inverter_RS232.yaml,
+# commit 2c7f942b7e306367d916b8b0c2a913222de9973d. Only the uart id and pins changed.
+#
+# Flash it remotely with tools/ota-remote.sh, read the result, then flash
+# victor.yaml (Modbus) or victor-pi30.yaml back.
+
+substitutions:
+  node_name: victor
+  friendly_name: Victor
+  area: "Дача"
+  board: esp32dev
+  led_pin: GPIO2
+  mqtt_prefix: victor/node
+  discovery_prefix: victor/ha
+  mqtt_log_level: INFO
+  inverter_tx_pin: GPIO16
+  inverter_rx_pin: GPIO17
+
+packages:
+  base: !include packages/base.yaml
+  mqtt: !include packages/mqtt-flespi.yaml
+  ota_remote: !include packages/ota-remote.yaml
+  status_led: !include packages/status-led.yaml
+
+uart:
+  id: uart_inverter
+  tx_pin: ${inverter_tx_pin}
+  rx_pin: ${inverter_rx_pin}
+  baud_rate: 2400        # starting value, changed at runtime
+  data_bits: 8
+  parity: NONE
+  stop_bits: 1
+  debug:
+    direction: RX
+    dummy_receiver: true
+    after:
+      delimiter: "\r"
+      timeout: 400ms
+    sequence:
+      - lambda: |-
+          if (bytes.empty()) return;
+          std::string hex, txt;
+          char b[8];
+          for (uint8_t c : bytes) {
+            sprintf(b, "%02X ", c);
+            hex += b;
+            txt += (c >= 0x20 && c <= 0x7E) ? (char) c : '.';
+          }
+          ESP_LOGI("RX", "***** %d bytes *****", (int) bytes.size());
+          ESP_LOGI("RX", "HEX    %s", hex.c_str());
+          ESP_LOGI("RX", "ASCII  %s", txt.c_str());
+
+script:
+  # -------------------------------------------------------------------
+  # All protocol families, at the current baud rate
+  # -------------------------------------------------------------------
+  - id: try_families
+    mode: single
+    then:
+      - logger.log: "  >>>>> PI30 / PI30MAX / PI30REVO"
+      - uart.write: [0x51, 0x50, 0x49, 0xBE, 0xAC, 0x0D]                    # QPI
+      - delay: 900ms
+      - uart.write: [0x51, 0x49, 0x44, 0xD6, 0xEA, 0x0D]                    # QID
+      - delay: 900ms
+      - uart.write: [0x51, 0x56, 0x46, 0x57, 0x62, 0x99, 0x0D]              # QVFW
+      - delay: 900ms
+      - uart.write: [0x51, 0x44, 0x49, 0x71, 0x1B, 0x0D]                    # QDI
+      - delay: 900ms
+      - uart.write: [0x51, 0x46, 0x4C, 0x41, 0x47, 0x98, 0x74, 0x0D]        # QFLAG
+      - delay: 900ms
+      - uart.write: [0x51, 0x4D, 0x4E, 0xBB, 0x64, 0x0D]                    # QMN
+      - delay: 900ms
+      - uart.write: [0x51, 0x4D, 0x4F, 0x44, 0x49, 0xC1, 0x0D]              # QMOD
+      - delay: 900ms
+      - uart.write: [0x51, 0x50, 0x49, 0x47, 0x53, 0xB7, 0xA9, 0x0D]        # QPIGS
+      - delay: 900ms
+      - uart.write: [0x51, 0x50, 0x49, 0x52, 0x49, 0xF8, 0x54, 0x0D]        # QPIRI
+      - delay: 900ms
+      - uart.write: [0x51, 0x50, 0x49, 0x57, 0x53, 0xB4, 0xDA, 0x0D]        # QPIWS
+      - delay: 900ms
+
+      - logger.log: "  >>>>> PI30 Phocos Any-Grid PSW-H"
+      - uart.write: [0x51, 0x50, 0x47, 0x53, 0x30, 0x3F, 0xDA, 0x0D]        # QPGS0
+      - delay: 900ms
+      - uart.write: [0x51, 0x50, 0x47, 0x53, 0x31, 0x2F, 0xFB, 0x0D]        # QPGS1
+      - delay: 900ms
+
+      - logger.log: "  >>>>> PI41 split phase"
+      - uart.write: [0x51, 0x50, 0x49, 0x47, 0x53, 0x32, 0x68, 0x2D, 0x0D]  # QPIGS2
+      - delay: 900ms
+      - uart.write: [0x51, 0x50, 0x32, 0x47, 0x53, 0x30, 0x14, 0x05, 0x0D]  # QP2GS0
+      - delay: 900ms
+
+      - logger.log: "  >>>>> PI18"
+      - uart.write: [0x5E, 0x50, 0x30, 0x30, 0x35, 0x50, 0x49, 0x71, 0x8B, 0x0D]        # ^P005PI
+      - delay: 900ms
+      - uart.write: [0x5E, 0x50, 0x30, 0x30, 0x35, 0x47, 0x53, 0x58, 0x14, 0x0D]        # ^P005GS
+      - delay: 900ms
+      - uart.write: [0x5E, 0x50, 0x30, 0x30, 0x36, 0x4D, 0x4F, 0x44, 0xDD, 0xBE, 0x0D]  # ^P006MOD
+      - delay: 900ms
+
+      - logger.log: "  >>>>> PI17"
+      - uart.write: [0x5E, 0x50, 0x30, 0x30, 0x33, 0x50, 0x49, 0x0D]                    # ^P003PI
+      - delay: 900ms
+      - uart.write: [0x5E, 0x50, 0x30, 0x30, 0x34, 0x4D, 0x4F, 0x44, 0x0D]              # ^P004MOD
+      - delay: 900ms
+
+      - logger.log: "  >>>>> PI16 (no CRC)"
+      - uart.write: [0x51, 0x50, 0x49, 0x0D]                                # QPI
+      - delay: 900ms
+      - uart.write: [0x51, 0x4D, 0x4F, 0x44, 0x0D]                          # QMOD
+      - delay: 900ms
+      - uart.write: [0x51, 0x50, 0x49, 0x47, 0x53, 0x0D]                    # QPIGS
+      - delay: 900ms
+
+      - logger.log: "  >>>>> Qx"
+      - uart.write: [0x51, 0x31, 0x0D]                                      # Q1
+      - delay: 900ms
+      - uart.write: [0x51, 0x32, 0x0D]                                      # Q2
+      - delay: 900ms
+
+      - logger.log: "  >>>>> Modbus RTU"
+      - uart.write: [0x05, 0x03, 0x11, 0x9A, 0x00, 0x02, 0xE0, 0x9C]        # slave 05 reg 4506
+      - delay: 900ms
+      - uart.write: [0x01, 0x03, 0x00, 0xC9, 0x00, 0x01, 0x54, 0x34]        # slave 01 reg 201
+      - delay: 900ms
+
+  # -------------------------------------------------------------------
+  # Full sweep across all baud rates
+  # -------------------------------------------------------------------
+  - id: sweep
+    mode: single
+    then:
+      - logger.log: "############### NEW CYCLE ###############"
+
+      - logger.log: "[BAUD 1/4] ===== 2400 ====="
+      - lambda: |-
+          id(uart_inverter).set_baud_rate(2400);
+          id(uart_inverter).load_settings(false);
+      - script.execute: try_families
+      - script.wait: try_families
+
+      - logger.log: "[BAUD 2/4] ===== 4800 ====="
+      - lambda: |-
+          id(uart_inverter).set_baud_rate(4800);
+          id(uart_inverter).load_settings(false);
+      - script.execute: try_families
+      - script.wait: try_families
+
+      - logger.log: "[BAUD 3/4] ===== 9600 ====="
+      - lambda: |-
+          id(uart_inverter).set_baud_rate(9600);
+          id(uart_inverter).load_settings(false);
+      - script.execute: try_families
+      - script.wait: try_families
+
+      - logger.log: "[BAUD 4/4] ===== 19200 ====="
+      - lambda: |-
+          id(uart_inverter).set_baud_rate(19200);
+          id(uart_inverter).load_settings(false);
+      - script.execute: try_families
+      - script.wait: try_families
+
+      - logger.log: "####### CYCLE COMPLETE - restarting in 10s #######"
+      - delay: 10s
+
+interval:
+  # 'sweep' is mode: single -> while it runs, these ticks do nothing.
+  - interval: 5s
+    then:
+      - script.execute: sweep

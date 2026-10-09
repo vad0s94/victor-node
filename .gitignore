@@ -1,0 +1,9 @@
+.venv/
+tools/ref/
+esphome/.esphome/
+esphome/secrets.yaml
+esphome/build/
+*.bin
+*.bin.gz
+*.ota.bin
+.DS_Store

@@ -1,0 +1,163 @@
+# Inverter over RS232, Voltronic PI30 (Q-commands) via ESPHome's built-in
+# pipsolar component. Used for the home prototype on the SP-3200 and as the
+# fallback if the remote inverter turns out to speak PI30 instead of Modbus.
+#
+# Entity names follow the Modbus package where possible ("PV Power", "Load Power",
+# "Battery Voltage" ...) so dashboards need few changes between the two.
+#
+# Expects substitutions: inverter_tx_pin, inverter_rx_pin, update_interval.
+# MUCHGC values below fit the 24 V SP-3200 (2..60 A). A 48 V PI30 unit accepts up
+# to 100 A: extend possible_values and the number's max_value for it.
+
+uart:
+  - id: uart_inverter
+    baud_rate: 2400
+    tx_pin: ${inverter_tx_pin}
+    rx_pin: ${inverter_rx_pin}
+
+pipsolar:
+  - id: inverter0
+    uart_id: uart_inverter
+
+sensor:
+  - platform: pipsolar
+    pipsolar_id: inverter0
+    grid_voltage:
+      name: "Grid Voltage"
+    grid_frequency:
+      name: "Grid Frequency"
+    ac_output_voltage:
+      name: "Load Voltage"
+    ac_output_frequency:
+      name: "Load Frequency"
+    ac_output_apparent_power:
+      name: "Load Power VA"
+    ac_output_active_power:
+      id: load_power
+      name: "Load Power"
+    output_load_percent:
+      name: "Load Percent"
+    bus_voltage:
+      name: "Bus Voltage"
+    battery_voltage:
+      id: battery_voltage
+      name: "Battery Voltage"
+    battery_charging_current:
+      id: battery_charge_current
+      name: "Battery Charge Current"
+    battery_discharge_current:
+      id: battery_discharge_current
+      name: "Battery Discharge Current"
+    battery_capacity_percent:
+      name: "Battery SoC"
+    inverter_heat_sink_temperature:
+      name: "Heat Sink Temperature"
+    pv_input_voltage:
+      name: "PV Voltage"
+    pv_input_current_for_battery:
+      name: "PV Current"
+    pv_charging_power:
+      id: pv_power
+      name: "PV Power"
+    current_max_ac_charging_current:
+      name: "Max Utility Charging Current"
+    current_max_charging_current:
+      name: "Max Total Charging Current"
+  - platform: template
+    id: battery_charge_power
+    name: "Battery Charge Power"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: ${update_interval}
+    lambda: 'return id(battery_charge_current).state * id(battery_voltage).state;'
+  - platform: template
+    id: battery_discharge_power
+    name: "Battery Discharge Power"
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+    accuracy_decimals: 0
+    update_interval: ${update_interval}
+    lambda: 'return id(battery_discharge_current).state * id(battery_voltage).state;'
+  - platform: total_daily_energy
+    name: "PV Daily Energy"
+    power_id: pv_power
+    restore: true
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+  - platform: total_daily_energy
+    name: "Daily Energy"
+    power_id: load_power
+    restore: true
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+    accuracy_decimals: 3
+    filters:
+      - multiply: 0.001
+
+text_sensor:
+  - platform: pipsolar
+    pipsolar_id: inverter0
+    device_mode:
+      name: "Working State"
+      filters:
+        - map:
+            - P -> Power On
+            - S -> Stand By
+            - L -> Line Mode
+            - B -> Invert Mode
+            - F -> Fault Mode
+            - D -> ShutDown
+
+binary_sensor:
+  - platform: pipsolar
+    pipsolar_id: inverter0
+    warnings_present:
+      name: "Warnings Present"
+    faults_present:
+      name: "Faults Present"
+    warning_line_fail:
+      id: grid_fail
+      name: "Grid Fail"
+
+switch:
+  - platform: pipsolar
+    pipsolar_id: inverter0
+    output_source_priority_utility:
+      name: "Output Priority Utility"
+    output_source_priority_solar:
+      name: "Output Priority Solar"
+    output_source_priority_battery:
+      name: "Output Priority SBU"
+
+output:
+  - platform: pipsolar
+    pipsolar_id: inverter0
+    current_max_ac_charging_current:
+      id: out_utility_charge_current
+      possible_values: [2, 10, 20, 30, 40, 50, 60]
+
+number:
+  # pipsolar exposes the setting as an output; this number makes it a normal
+  # Home Assistant control. The value is sent as MUCHGC0<nn>.
+  - platform: template
+    name: "Utility Charge Current"
+    icon: mdi:transmission-tower-export
+    unit_of_measurement: A
+    min_value: 10
+    max_value: 60
+    step: 10
+    optimistic: true
+    restore_value: false
+    entity_category: config
+    set_action:
+      - output.pipsolar.set_level:
+          id: out_utility_charge_current
+          value: !lambda 'return x;'

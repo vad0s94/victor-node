@@ -1,0 +1,291 @@
+# Battery-protection rules that run on the node itself, so they keep working
+# when the internet or Home Assistant is down. Thresholds are editable from HA.
+# No open-source project covers on-device SOC rules for this inverter, so this
+# package is ours; it only drives the upstream selects (aver-ua ids).
+#
+# Rule 1 "grid charge current by SOC": picks the utility charge current from
+#   the BMS SOC band (below low / between / above high), with 2 % hysteresis.
+# Rule 2 "grid backup on low SOC": when SOC drops to the "on" threshold and the
+#   grid is present, switches output to Utility first and charging to
+#   Solar and Utility; returns to the chosen normal modes at the "off" threshold.
+#
+# Safety: both rules are OFF after flashing, act only with fresh BMS data and a
+# live inverter link, write only when the target differs from the inverter's
+# current value, and change each setting at most once per 5 minutes (EEPROM wear).
+# While rule 2 is engaged it re-asserts its modes every minute: switch the rule
+# off to take manual control.
+#
+# Expects ids: bms_soc, bms_online, inverter_link, grid_active,
+# utility_charge_current, output_source_priority_select, charger_source_priority_select.
+
+globals:
+  - id: rules_last_write_ms
+    type: std::array<uint32_t, 3>
+    initial_value: "{0, 0, 0}"
+  - id: rule_charge_band
+    type: int
+    initial_value: "-1"
+  - id: rule_grid_engaged
+    type: bool
+    restore_value: true
+    initial_value: "false"
+
+switch:
+  - platform: template
+    id: rule_charge_enabled
+    name: "Rule Grid Charge Current By SOC"
+    icon: mdi:battery-charging-medium
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+  - platform: template
+    id: rule_grid_enabled
+    name: "Rule Grid Backup On Low SOC"
+    icon: mdi:transmission-tower-import
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    entity_category: config
+    on_turn_off:
+      - script.execute:
+          id: rule_grid_release
+          reason: "rule disabled"
+
+number:
+  - platform: template
+    id: rule_soc_low
+    name: "Rule SOC Low"
+    icon: mdi:battery-low
+    unit_of_measurement: "%"
+    min_value: 5
+    max_value: 95
+    step: 1
+    initial_value: 30
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: rule_soc_high
+    name: "Rule SOC High"
+    icon: mdi:battery-high
+    unit_of_measurement: "%"
+    min_value: 5
+    max_value: 100
+    step: 1
+    initial_value: 80
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: rule_current_low
+    name: "Rule Current Below Low"
+    icon: mdi:current-dc
+    unit_of_measurement: A
+    min_value: 10
+    max_value: 100
+    step: 10
+    initial_value: 60
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: rule_current_mid
+    name: "Rule Current Between"
+    icon: mdi:current-dc
+    unit_of_measurement: A
+    min_value: 10
+    max_value: 100
+    step: 10
+    initial_value: 30
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: rule_current_high
+    name: "Rule Current Above High"
+    icon: mdi:current-dc
+    unit_of_measurement: A
+    min_value: 10
+    max_value: 100
+    step: 10
+    initial_value: 10
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: rule_grid_on_soc
+    name: "Rule Grid Backup On At SOC"
+    icon: mdi:battery-alert-variant-outline
+    unit_of_measurement: "%"
+    min_value: 5
+    max_value: 90
+    step: 1
+    initial_value: 20
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: rule_grid_off_soc
+    name: "Rule Grid Backup Off At SOC"
+    icon: mdi:battery-check-outline
+    unit_of_measurement: "%"
+    min_value: 10
+    max_value: 100
+    step: 1
+    initial_value: 60
+    restore_value: true
+    optimistic: true
+    entity_category: config
+
+select:
+  - platform: template
+    id: rule_normal_output
+    name: "Rule Normal Output Priority"
+    icon: mdi:export
+    options:
+      - "SBU priority"
+      - "Solar first (SUB)"
+      - "Utility first (USB)"
+    initial_option: "SBU priority"
+    restore_value: true
+    optimistic: true
+    entity_category: config
+  - platform: template
+    id: rule_normal_charger
+    name: "Rule Normal Charger Priority"
+    icon: mdi:battery-charging
+    options:
+      - "Solar first"
+      - "Solar and Utility"
+      - "Only Solar"
+    initial_option: "Solar first"
+    restore_value: true
+    optimistic: true
+    entity_category: config
+
+text_sensor:
+  - platform: template
+    id: rules_status
+    name: "Rules Last Action"
+    icon: mdi:robot-outline
+
+script:
+  # Sets a select only if it differs and the write interval allows it.
+  # Returns via rules_status what happened.
+  - id: rule_set_select
+    mode: queued
+    parameters:
+      target: int          # 0 = utility charge current, 1 = output priority, 2 = charger priority
+      option: string
+      reason: string
+    then:
+      - lambda: |-
+          select::Select *sel = target == 0 ? (select::Select *) id(utility_charge_current)
+                              : target == 1 ? (select::Select *) id(output_source_priority_select)
+                                            : (select::Select *) id(charger_source_priority_select);
+          if (!sel->has_option(option)) {
+            id(rules_status).publish_state("skip: no option '" + option + "'");
+            return;
+          }
+          auto cur = sel->current_option();
+          if (sel->has_state() && option == std::string(cur.c_str(), cur.size())) return;
+          uint32_t now = millis();
+          uint32_t &last = id(rules_last_write_ms)[target];
+          if (last != 0 && now - last < 5UL * 60UL * 1000UL) return;
+          last = now;
+          auto call = sel->make_call();
+          call.set_option(option);
+          call.perform();
+          ESP_LOGW("rules", "%s -> %s (%s)", sel->get_name().c_str(), option.c_str(), reason.c_str());
+          id(rules_status).publish_state(option + " (" + reason + ")");
+
+  - id: rule_grid_release
+    mode: queued
+    parameters:
+      reason: string
+    then:
+      - if:
+          condition:
+            lambda: 'return id(rule_grid_engaged);'
+          then:
+            - lambda: 'id(rule_grid_engaged) = false;'
+            - script.execute:
+                id: rule_set_select
+                target: 1
+                option: !lambda 'return std::string(id(rule_normal_output).current_option().c_str());'
+                reason: !lambda 'return "grid backup off: " + reason;'
+            - script.wait: rule_set_select
+            - script.execute:
+                id: rule_set_select
+                target: 2
+                option: !lambda 'return std::string(id(rule_normal_charger).current_option().c_str());'
+                reason: !lambda 'return "grid backup off: " + reason;'
+
+interval:
+  - interval: 60s
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(bms_online).state && id(inverter_link).state &&
+                     id(bms_soc).has_state() && !std::isnan(id(bms_soc).state);
+          then:
+            # Rule 1: utility charge current by SOC band
+            - if:
+                condition:
+                  switch.is_on: rule_charge_enabled
+                then:
+                  - lambda: |-
+                      float soc = id(bms_soc).state;
+                      float lo = id(rule_soc_low).state, hi = id(rule_soc_high).state;
+                      int band = id(rule_charge_band);
+                      // 2 % hysteresis around the band edges
+                      int raw = soc < lo ? 0 : (soc < hi ? 1 : 2);
+                      if (band < 0) band = raw;
+                      else if (raw > band && soc >= (band == 0 ? lo : hi) + 2) band = raw;
+                      else if (raw < band && soc <= (band == 2 ? hi : lo) - 2) band = raw;
+                      id(rule_charge_band) = band;
+                  - script.execute:
+                      id: rule_set_select
+                      target: 0
+                      option: !lambda |-
+                        int band = id(rule_charge_band);
+                        float a = band == 0 ? id(rule_current_low).state
+                                : band == 1 ? id(rule_current_mid).state
+                                            : id(rule_current_high).state;
+                        return to_string((int) a);
+                      reason: !lambda 'return "SOC " + to_string((int) id(bms_soc).state) + "%";'
+            # Rule 2: grid backup on low SOC
+            - if:
+                condition:
+                  switch.is_on: rule_grid_enabled
+                then:
+                  - if:
+                      condition:
+                        lambda: |-
+                          return !id(rule_grid_engaged) && id(grid_active).state &&
+                                 id(bms_soc).state <= id(rule_grid_on_soc).state;
+                      then:
+                        - lambda: 'id(rule_grid_engaged) = true;'
+                  - if:
+                      condition:
+                        lambda: 'return id(rule_grid_engaged) && id(bms_soc).state >= id(rule_grid_off_soc).state;'
+                      then:
+                        - script.execute:
+                            id: rule_grid_release
+                            reason: !lambda 'return "SOC " + to_string((int) id(bms_soc).state) + "%";'
+                      else:
+                        - if:
+                            condition:
+                              lambda: 'return id(rule_grid_engaged);'
+                            then:
+                              - script.execute:
+                                  id: rule_set_select
+                                  target: 1
+                                  option: "Utility first (USB)"
+                                  reason: !lambda 'return "grid backup on, SOC " + to_string((int) id(bms_soc).state) + "%";'
+                              - script.wait: rule_set_select
+                              - script.execute:
+                                  id: rule_set_select
+                                  target: 2
+                                  option: "Solar and Utility"
+                                  reason: "grid backup on"
