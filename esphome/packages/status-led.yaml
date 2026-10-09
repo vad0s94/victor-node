@@ -22,10 +22,10 @@ interval:
           id(led_tick) = (id(led_tick) + 1) % 10;
           bool on;
           if (!wifi::global_wifi_component->is_connected()) {
-            on = id(led_tick) % 2 == 0;                   // 2.5 Hz
-          } else if (!id(mqtt_client).is_connected()) {
-            on = id(led_tick) < 5;                        // 1 Hz
+            on = id(led_tick) % 2 == 0;                   // 2.5 Hz (no Wi-Fi)
+          } else if (!id(transport_connected)) {
+            on = id(led_tick) < 5;                        // 1 Hz (Wi-Fi connected, transport not ready)
           } else {
-            on = true;
+            on = true;                                    // Solid on (all connected)
           }
           if (on) id(status_led_out).turn_on(); else id(status_led_out).turn_off();

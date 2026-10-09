@@ -1,0 +1,54 @@
+name: CI Validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install "esphome==2026.9.1" pyyaml
+
+      - name: Fetch reference upstream components
+        run: |
+          mkdir -p tools/ref/jk-src
+          curl -sSL "https://codeload.github.com/syssi/esphome-jk-bms/tar.gz/59c994e726c34b123e43eb0090736fd94706f0db" \
+            | tar -xz -C tools/ref/jk-src --strip-components=1
+
+      - name: Setup dummy secrets for validation
+        run: |
+          cp esphome/secrets.example.yaml esphome/secrets.yaml
+
+      - name: Test constructor presets generation
+        run: |
+          python3 tools/constructor.py --preset powmr-jk-api -o esphome/test-powmr-jk-api.yaml
+          python3 tools/constructor.py --preset powmr-jk-mqtt -o esphome/test-powmr-jk-mqtt.yaml
+          python3 tools/constructor.py --preset powmr-nobms-api -o esphome/test-powmr-nobms-api.yaml
+          python3 tools/constructor.py --preset voltronic-jk-api -o esphome/test-voltronic-jk-api.yaml
+          python3 tools/constructor.py --preset voltronic-nobms-api -o esphome/test-voltronic-nobms-api.yaml
+
+      - name: Validate ESPHome configurations
+        run: |
+          for cfg in victor.yaml victor-pi30.yaml powmr-jk-api.yaml powmr-jk-mqtt.yaml powmr-nobms-api.yaml voltronic-jk-api.yaml voltronic-nobms-api.yaml; do
+            echo "==> Validating $cfg..."
+            esphome -s jk_bms_source tools/ref/jk-src/components config "esphome/$cfg"
+          done
+
+      - name: Check Home Assistant entity parity
+        run: |
+          python3 tools/check-entities.py victor.yaml

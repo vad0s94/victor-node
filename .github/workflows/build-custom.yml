@@ -1,0 +1,120 @@
+name: Build Custom Firmware
+
+on:
+  workflow_dispatch:
+    inputs:
+      node_name:
+        description: "Device Name"
+        required: true
+        default: "my-solar-node"
+      board:
+        description: "ESP32 Board Type"
+        required: true
+        type: choice
+        options:
+          - esp32dev
+          - wemos_d1_mini32
+          - esp32-c3-devkitm-1
+        default: esp32dev
+      inverter:
+        description: "Inverter Type / Protocol"
+        required: true
+        type: choice
+        options:
+          - powmr_2341
+          - pi30
+          - probe
+        default: powmr_2341
+      bms:
+        description: "Battery Management System (BMS)"
+        required: true
+        type: choice
+        options:
+          - jk_ble
+          - none
+        default: jk_ble
+      transport:
+        description: "Transport / Connection"
+        required: true
+        type: choice
+        options:
+          - api
+          - mqtt
+          - mqtt_tls
+          - flespi
+        default: api
+      rules:
+        description: "Enable on-device battery SOC rules (PowMr + JK BMS only)"
+        required: false
+        type: boolean
+        default: true
+      wifi_ssid:
+        description: "Wi-Fi SSID (Optional: leave empty to configure via Captive Portal / Web)"
+        required: false
+        default: ""
+      wifi_password:
+        description: "Wi-Fi Password (Optional)"
+        required: false
+        default: ""
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install ESPHome
+        run: |
+          pip install --upgrade pip
+          pip install "esphome==2026.9.1"
+
+      - name: Fetch reference upstream components
+        run: |
+          mkdir -p tools/ref/jk-src
+          curl -sSL "https://codeload.github.com/syssi/esphome-jk-bms/tar.gz/59c994e726c34b123e43eb0090736fd94706f0db" \
+            | tar -xz -C tools/ref/jk-src --strip-components=1
+
+      - name: Prepare custom configuration
+        run: |
+          RULES_FLAG=""
+          if [ "${{ github.event.inputs.rules }}" = "true" ]; then
+            RULES_FLAG="--rules"
+          else
+            RULES_FLAG="--no-rules"
+          fi
+
+          python3 tools/constructor.py \
+            --name "${{ github.event.inputs.node_name }}" \
+            --board "${{ github.event.inputs.board }}" \
+            --inverter "${{ github.event.inputs.inverter }}" \
+            --bms "${{ github.event.inputs.bms }}" \
+            --transport "${{ github.event.inputs.transport }}" \
+            $RULES_FLAG \
+            -o "esphome/${{ github.event.inputs.node_name }}.yaml"
+
+          cp esphome/secrets.example.yaml esphome/secrets.yaml
+
+          # If user supplied custom Wi-Fi, inject it into secrets
+          if [ -n "${{ github.event.inputs.wifi_ssid }}" ]; then
+            sed -i 's/wifi_home_ssid: ".*"/wifi_home_ssid: "${{ github.event.inputs.wifi_ssid }}"/' esphome/secrets.yaml
+            sed -i 's/wifi_home_password: ".*"/wifi_home_password: "${{ github.event.inputs.wifi_password }}"/' esphome/secrets.yaml
+          fi
+
+      - name: Compile custom firmware
+        env:
+          JK_BMS_SOURCE: ../tools/ref/jk-src/components
+        run: |
+          tools/build.sh "${{ github.event.inputs.node_name }}.yaml"
+
+      - name: Upload custom firmware binaries
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ github.event.inputs.node_name }}
+          path: esphome/build/${{ github.event.inputs.node_name }}.*

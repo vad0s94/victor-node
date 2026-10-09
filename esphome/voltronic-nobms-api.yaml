@@ -1,0 +1,24 @@
+# Voltronic PI30 (Axpert, MPP Solar, EASun, SP-3200) - Inverter Only (No BMS) + Native Home Assistant API
+# Universal profile for standalone Voltronic-family inverter monitoring on local LAN.
+
+substitutions:
+  node_name: solar-voltronic
+  friendly_name: "Solar Voltronic"
+  area: "Solar"
+  board: esp32dev
+  led_pin: GPIO2
+
+  # API Transport
+  api_reboot_timeout: 15min
+
+  # Inverter RS232 (MAX3232 TTL side)
+  inverter_tx_pin: GPIO16
+  inverter_rx_pin: GPIO17
+  update_interval: 15s
+
+packages:
+  base: !include packages/base.yaml
+  transport: !include packages/transport-api.yaml
+  ota_remote: !include packages/ota-remote.yaml
+  status_led: !include packages/status-led.yaml
+  inverter: !include packages/inverter-pi30.yaml

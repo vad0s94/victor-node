@@ -1,0 +1,101 @@
+name: Release Firmwares
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag name (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+jobs:
+  build-matrix:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - powmr-jk-api
+          - powmr-jk-mqtt
+          - powmr-nobms-api
+          - voltronic-jk-api
+          - voltronic-nobms-api
+          - victor-probe
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install ESPHome
+        run: |
+          pip install --upgrade pip
+          pip install "esphome==2026.9.1"
+
+      - name: Fetch reference upstream components
+        run: |
+          mkdir -p tools/ref/jk-src
+          curl -sSL "https://codeload.github.com/syssi/esphome-jk-bms/tar.gz/59c994e726c34b123e43eb0090736fd94706f0db" \
+            | tar -xz -C tools/ref/jk-src --strip-components=1
+
+      - name: Prepare secrets
+        run: |
+          cp esphome/secrets.example.yaml esphome/secrets.yaml
+
+      - name: Compile firmware target
+        env:
+          JK_BMS_SOURCE: ../tools/ref/jk-src/components
+        run: |
+          tools/build.sh ${{ matrix.target }}.yaml
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-${{ matrix.target }}
+          path: esphome/build/${{ matrix.target }}.*
+
+  publish-release:
+    needs: build-matrix
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all firmware artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-binaries
+          pattern: firmware-*
+          merge-multiple: true
+
+      - name: Inspect release assets
+        run: |
+          ls -la release-binaries/
+
+      - name: Determine tag name
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.tag }}
+          name: Release ${{ steps.vars.outputs.tag }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-binaries/*

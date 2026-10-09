@@ -1,0 +1,14 @@
+{
+  "name": "PowMr/Victor Standalone (No BMS - Home Assistant API)",
+  "version": "1.0.0",
+  "home_assistant_domain": "esphome",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        { "path": "../firmware/powmr-nobms-api.factory.bin", "offset": 0 }
+      ]
+    }
+  ]
+}

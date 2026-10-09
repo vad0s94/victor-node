@@ -14,6 +14,11 @@ esp32:
   framework:
     type: esp-idf
 
+globals:
+  - id: transport_connected
+    type: bool
+    initial_value: "false"
+
 preferences:
   # Daily energy counters and settings survive reboots; writing every 5 min
   # keeps flash wear negligible and loses at most 5 min of counting on power loss.
@@ -43,6 +48,9 @@ wifi:
 
 # Opens a Wi-Fi setup page when someone joins the "<name> Setup" hotspot.
 captive_portal:
+
+# Web flasher / serial improv for browser flashing
+improv_serial:
 
 ota:
   - platform: esphome

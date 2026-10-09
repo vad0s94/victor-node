@@ -25,6 +25,10 @@ mqtt:
     level: ${mqtt_log_level}
   keepalive: 30s
   reboot_timeout: 60min
+  on_connect:
+    - lambda: 'id(transport_connected) = true;'
+  on_disconnect:
+    - lambda: 'id(transport_connected) = false;'
   certificate_authority: |
       -----BEGIN CERTIFICATE-----
       MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG

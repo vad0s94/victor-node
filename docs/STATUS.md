@@ -11,6 +11,16 @@
 - [x] HA: пакет сповіщень, дашборд «Дача», вкладка налаштувань для адміна. `tools/check-entities.py` = 0 пропусків.
 - [x] Міст `mosquitto/flespi-bridge.conf`, скрипти встановлення, віддаленого OTA, читання MQTT.
 - [x] Документація для власника й інструкція для родича.
+- [x] **Відкритий конструктор для масового користувача:**
+  - `tools/constructor.py` — інтерактивний wizard та CLI генератор конфігурацій (будь-який інвертор, BMS, плата, транспорт, правила).
+  - Транспорти на вибір: Native HA API (без брокера), Universal MQTT (будь-який брокер), TLS MQTT, flespi.
+  - Готові профілі: `powmr-jk-api`, `powmr-jk-mqtt`, `powmr-nobms-api`, `voltronic-jk-api`, `voltronic-nobms-api`.
+  - Підтримка Improv Serial та ESPHome Web Tools для прошивки з браузера.
+- [x] **GitHub Actions CI/CD:**
+  - `.github/workflows/ci.yml` — валідація конфігурацій та сутностей.
+  - `.github/workflows/release.yml` — збірка матриці бінарників (`.factory.bin`, `.ota.bin`, `.md5`) та публікація в GitHub Releases.
+  - `.github/workflows/build-custom.yml` — онлайн-конструктор прошивок через браузер (workflow_dispatch) без встановлення ESPHome.
+- [x] **Open Source готовність:** ліцензія Apache 2.0 (`LICENSE`), подяки (`NOTICE.md`), універсальний шаблон мосту (`mosquitto/bridge-universal.conf.example`), оновлений `README.md`.
 
 ## Не перевірено / відкрито
 - [ ] Жодна прошивка ще не запускалась на залізі (ESP32U і D1 Mini ESP32 замовлені).
@@ -19,7 +29,6 @@
 - [ ] Реальні entity id в HA: прогнозовані `victor_*`, перевірити після першого підключення.
 - [ ] Heap на залізі при BLE + TLS + web_server (static RAM 87 %).
 - [ ] `HA_PUBLIC_URL` (адреса cloudflared) для OTA через інтернет — власник знає, у репо не записано.
-- [ ] Git: репозиторій ініціалізовано, комітів немає.
 
 ## Наступні кроки (по черзі)
 1. Власник: токени flespi `victor-node`, `home-bridge`; заповнити `esphome/secrets.yaml`.

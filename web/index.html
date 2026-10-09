@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solar Inverter & JK BMS Gateway — Веб-інсталятор прошивки</title>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #10b981;
+      --accent-bg: rgba(16, 185, 129, 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      max-width: 720px;
+      width: 100%;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    header h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+    .wizard-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+    .step-title {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-badge {
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      width: 26px;
+      height: 26px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+    }
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    @media (min-width: 600px) {
+      .options-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .option-btn {
+      background: #0f172a;
+      border: 2px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: left;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .option-btn:hover {
+      border-color: #38bdf8;
+      background: #132238;
+    }
+    .option-btn.selected {
+      border-color: #38bdf8;
+      background: #0c2d48;
+      box-shadow: 0 0 0 1px #38bdf8;
+    }
+    .option-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .option-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .summary-box {
+      background: #091322;
+      border: 1px solid #1e3a5f;
+      border-radius: 12px;
+      padding: 16px;
+      margin: 20px 0;
+    }
+    .summary-title {
+      color: #38bdf8;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+    .summary-desc {
+      font-size: 0.85rem;
+      color: #cbd5e1;
+    }
+    .install-area {
+      text-align: center;
+      padding: 20px 0 10px;
+    }
+    esp-web-install-button {
+      display: inline-block;
+      --esp-tools-button-border-radius: 10px;
+      --esp-tools-button-color: var(--primary);
+    }
+    .compat-warning {
+      background: rgba(234, 179, 8, 0.1);
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      color: #fde047;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      margin-top: 14px;
+      display: none;
+    }
+    .footer-notes {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 24px;
+    }
+    .footer-notes a { color: #38bdf8; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <h1>Solar & BMS Gateway Installer</h1>
+    <p>Інтерактивний майстер вибору та прошивки ESP32 прямо з браузера</p>
+  </header>
+
+  <div class="wizard-card">
+    <!-- Крок 1: Інвертор -->
+    <div class="step-title">
+      <span class="step-badge">1</span> Який у вас інвертор?
+    </div>
+    <div class="options-grid" id="inverter-options">
+      <div class="option-btn selected" data-value="powmr">
+        <span class="option-title">PowMr / Victor / SmartESS</span>
+        <span class="option-desc">Modbus RTU 2341 (POW-HVM, NM-ECO PLUS, EASun)</span>
+      </div>
+      <div class="option-btn" data-value="voltronic">
+        <span class="option-title">Voltronic / Axpert / EASun</span>
+        <span class="option-desc">Протокол PI30 / Q-команди (SP-3200, MPP Solar)</span>
+      </div>
+    </div>
+
+    <!-- Крок 2: BMS -->
+    <div class="step-title">
+      <span class="step-badge">2</span> Чи підключена батарея з BMS?
+    </div>
+    <div class="options-grid" id="bms-options">
+      <div class="option-btn selected" data-value="jk">
+        <span class="option-title">Так, JK BMS (Bluetooth BLE)</span>
+        <span class="option-desc">JK-B1A..., JK-B2A... (45+ сенсорів, напруги комірок, балансир)</span>
+      </div>
+      <div class="option-btn" data-value="none">
+        <span class="option-title">Ні, BMS немає</span>
+        <span class="option-desc">Тільки моніторинг інвертора (легша прошивка без Bluetooth)</span>
+      </div>
+    </div>
+
+    <!-- Крок 3: Транспорт -->
+    <div class="step-title">
+      <span class="step-badge">3</span> Як підключатимете до Home Assistant?
+    </div>
+    <div class="options-grid" id="transport-options">
+      <div class="option-btn selected" data-value="api">
+        <span class="option-title">Home Assistant API (Рекомендовано)</span>
+        <span class="option-desc">Пряме підключення в локальній мережі або через VPN, без MQTT</span>
+      </div>
+      <div class="option-btn" data-value="mqtt">
+        <span class="option-title">MQTT Брокер</span>
+        <span class="option-desc">Для віддаленого моніторингу через інтернет або хмарні мости</span>
+      </div>
+    </div>
+
+    <!-- Підсумок конфігурації -->
+    <div class="summary-box">
+      <div class="summary-title" id="summary-title">Обрано: PowMr / Victor + JK BMS (Home Assistant API)</div>
+      <div class="summary-desc" id="summary-desc">
+        Повний комплект: зчитування даних інвертора по RS232, зчитування напруг кожної комірки батареї по Bluetooth,
+        автоматичні правила захисту акумулятора за SOC на борту ESP32, миттєве автовиявлення в Home Assistant.
+      </div>
+    </div>
+
+    <!-- Кнопка прошивки -->
+    <div class="install-area">
+      <esp-web-install-button id="install-btn" manifest="manifests/manifest-powmr-jk-api.json">
+        <button slot="activate" style="background:#0284c7;color:white;padding:12px 28px;border:none;border-radius:10px;font-size:1.05rem;font-weight:600;cursor:pointer;">
+          ПРОШИТИ ЧЕРЕЗ USB (В ОДИН КЛІК)
+        </button>
+      </esp-web-install-button>
+
+      <div class="compat-warning" id="compat-warning">
+        Ваш браузер не підтримує Web Serial API. Для прошивки в один клік відкрийте цю сторінку в
+        <strong>Google Chrome</strong> або <strong>Microsoft Edge</strong> на комп'ютері чи Android-смартфоні.
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-notes">
+    <p>Після завершення прошивки браузер запропонує ввести ім'я та пароль вашого Wi-Fi.</p>
+    <p style="margin-top: 6px;">Вихідний код проєкту доступний на <a href="https://github.com/vadykravchuk/victor-node" target="_blank">GitHub</a>.</p>
+  </div>
+</div>
+
+<script>
+  // Check Web Serial support
+  if (!('serial' in navigator)) {
+    document.getElementById('compat-warning').style.display = 'block';
+  }
+
+  let selectedInverter = 'powmr';
+  let selectedBms = 'jk';
+  let selectedTransport = 'api';
+
+  function updateManifest() {
+    let profile = '';
+    let title = '';
+    let desc = '';
+
+    if (selectedInverter === 'powmr') {
+      if (selectedBms === 'jk') {
+        profile = selectedTransport === 'api' ? 'powmr-jk-api' : 'powmr-jk-mqtt';
+        title = `PowMr / Victor + JK BMS (${selectedTransport === 'api' ? 'HA API' : 'MQTT'})`;
+        desc = `Повний моніторинг інвертора Modbus 2341, 45+ параметрів JK BMS по BLE, автономні правила заряду на ESP32. Підключення через ${selectedTransport.toUpperCase()}.`;
+      } else {
+        profile = 'powmr-nobms-api';
+        title = 'PowMr / Victor (Тільки інвертор, без BMS)';
+        desc = 'Легка прошивка для інверторів PowMr/Victor. Bluetooth вимкнено, контролюються всі параметри інвертора, навантаження та сонячних панелей.';
+      }
+    } else {
+      if (selectedBms === 'jk') {
+        profile = 'voltronic-jk-api';
+        title = 'Voltronic / Axpert PI30 + JK BMS (HA API)';
+        desc = 'Підтримка інверторів родини Voltronic (Axpert, EASun, SP-3200) по протоколу PI30 разом з акумулятором JK BMS по Bluetooth.';
+      } else {
+        profile = 'voltronic-nobms-api';
+        title = 'Voltronic / Axpert PI30 (Тільки інвертор, без BMS)';
+        desc = 'Моніторинг інверторів Voltronic/Axpert без BMS. Читання напруг мережі, сонця, навантаження та режимів роботи.';
+      }
+    }
+
+    document.getElementById('summary-title').textContent = 'Обрано: ' + title;
+    document.getElementById('summary-desc').textContent = desc;
+
+    const btn = document.getElementById('install-btn');
+    btn.setAttribute('manifest', `manifests/manifest-${profile}.json`);
+  }
+
+  function bindOptions(containerId, callback) {
+    const container = document.getElementById(containerId);
+    container.querySelectorAll('.option-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        container.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        callback(btn.dataset.value);
+        updateManifest();
+      });
+    });
+  }
+
+  bindOptions('inverter-options', val => { selectedInverter = val; });
+  bindOptions('bms-options', val => { selectedBms = val; });
+  bindOptions('transport-options', val => { selectedTransport = val; });
+
+  updateManifest();
+</script>
+
+</body>
+</html>

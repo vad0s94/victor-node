@@ -1,0 +1,47 @@
+# Universal Mosquitto Bridge Template for Home Assistant (Mosquitto add-on)
+# Connects your home broker to ANY external MQTT broker (flespi, HiveMQ Cloud,
+# EMQX Cloud, AWS IoT, CloudMQTT, or self-hosted VPS Mosquitto).
+#
+# How to install in Home Assistant:
+# 1. Fill in connection details below.
+# 2. Place this file in /share/mosquitto/bridge.conf inside Home Assistant.
+# 3. In HA -> Settings -> Add-ons -> Mosquitto Broker -> Configuration:
+#    customize:
+#      active: true
+#      folder: mosquitto
+# 4. Restart the Mosquitto add-on.
+
+connection external-cloud-bridge
+address YOUR_BROKER_HOST:8883
+bridge_protocol_version mqttv311
+
+# Authentication (token or user/password)
+remote_username YOUR_USERNAME_OR_TOKEN
+remote_password YOUR_PASSWORD_IF_APPLICABLE
+remote_clientid ha-home-bridge
+
+# TLS Configuration
+bridge_tls_use_os_certs true
+bridge_insecure false
+try_private false
+cleansession true
+keepalive_interval 60
+restart_timeout 10 120
+start_type automatic
+
+# Bridge health topic in Home Assistant: 1 = online, 0 = offline
+notifications true
+notifications_local_only true
+notification_topic solar/bridge/state
+
+# 1. Device telemetry and controls (both directions):
+# Maps <node-prefix>/node/# on remote to <node-prefix>/node/# locally
+topic # both 1 solar/node/ solar/node/
+
+# 2. Home Assistant Auto-Discovery (cloud -> home):
+# Maps remote <node-prefix>/ha/<component>/<device>/... to homeassistant/<component>/<device>/...
+topic +/solar/# in 1 homeassistant/ solar/ha/
+
+# 3. Home Assistant Status / Birth (home -> cloud):
+# Tells remote node to resend discovery when HA reboots
+topic status out 1 homeassistant/ solar/ha/

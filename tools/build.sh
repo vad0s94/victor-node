@@ -14,14 +14,24 @@ name="${cfg%.yaml}"
 
 args=()
 [ -n "${JK_BMS_SOURCE:-}" ] && args+=(-s jk_bms_source "$JK_BMS_SOURCE")
-../.venv/bin/esphome "${args[@]}" compile "$cfg"
 
-ota=$(find .esphome/build/victor -name firmware.ota.bin -newer "$cfg" -print -quit)
-factory=$(find .esphome/build/victor -name firmware.factory.bin -newer "$cfg" -print -quit)
-[ -n "$ota" ] || { echo "build output not found under .esphome/build/victor" >&2; exit 1; }
+ESPHOME_BIN="../.venv/bin/esphome"
+[ -x "$ESPHOME_BIN" ] || ESPHOME_BIN="esphome"
+
+"$ESPHOME_BIN" "${args[@]}" compile "$cfg"
+
+ota=$(find .esphome/build -name firmware.ota.bin -newer "$cfg" -print -quit)
+factory=$(find .esphome/build -name firmware.factory.bin -newer "$cfg" -print -quit)
+[ -n "$ota" ] || { echo "build output not found under .esphome/build" >&2; exit 1; }
 
 mkdir -p build
 cp "$ota" "build/${name}.ota.bin"
 [ -n "$factory" ] && cp "$factory" "build/${name}.factory.bin"
-md5 -q "build/${name}.ota.bin" > "build/${name}.ota.md5"
+
+if command -v md5 >/dev/null 2>&1; then
+  md5 -q "build/${name}.ota.bin" > "build/${name}.ota.md5"
+elif command -v md5sum >/dev/null 2>&1; then
+  md5sum "build/${name}.ota.bin" | awk '{print $1}' > "build/${name}.ota.md5"
+fi
+
 ls -l build/"${name}".*

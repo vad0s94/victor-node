@@ -1,0 +1,42 @@
+# PowMr / Victor (Modbus 2341) + JK BMS (BLE) + Universal MQTT
+# Universal profile for any MQTT broker (local Mosquitto, EMQX, HiveMQ, Cloud, etc.)
+
+substitutions:
+  node_name: solar-powmr
+  friendly_name: "Solar PowMr"
+  area: "Solar"
+  board: esp32dev
+  led_pin: GPIO2
+
+  # MQTT Layout (compatible with any standard broker)
+  mqtt_broker: "192.168.1.100"       # IP or hostname of your MQTT broker
+  mqtt_port: "1883"                  # 1883 for plain, 8883 for TLS
+  mqtt_username: ""                  # optional MQTT username
+  mqtt_password: ""                  # optional MQTT password
+  mqtt_prefix: solar-powmr/node
+  discovery_prefix: homeassistant    # standard Home Assistant discovery
+  mqtt_log_level: WARN
+  mqtt_reboot_timeout: 60min
+
+  # Inverter RS232 (MAX3232 TTL side)
+  inverter_tx_pin: GPIO16
+  inverter_rx_pin: GPIO17
+  inverter_voltage_offset: "0"
+  update_interval: 15s
+  select_skip_updates: "2"
+  modbus_write_multiple: "false"
+
+  # JK BMS BLE
+  bms_default_mac: "00:00:00:00:00:00"
+  jk_bms_source: github://syssi/esphome-jk-bms@59c994e726c34b123e43eb0090736fd94706f0db
+  bms_protocol: JK02_32S
+  bms_throttle: 10s
+
+packages:
+  base: !include packages/base.yaml
+  transport: !include packages/transport-mqtt.yaml
+  ota_remote: !include packages/ota-remote.yaml
+  status_led: !include packages/status-led.yaml
+  inverter: !include packages/inverter-powmr-2341.yaml
+  bms: !include packages/bms-jk-ble.yaml
+  rules: !include packages/rules-soc.yaml
