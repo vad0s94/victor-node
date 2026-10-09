@@ -41,11 +41,8 @@ jobs:
       - name: Test constructor presets generation
         run: |
           python3 tools/constructor.py --preset powmr-jk-api -o esphome/test-powmr-jk-api.yaml
-          python3 tools/constructor.py --preset powmr-2xjk-api -o esphome/test-powmr-2xjk-api.yaml
           python3 tools/constructor.py --preset powmr-daly-api -o esphome/test-powmr-daly-api.yaml
-          python3 tools/constructor.py --preset powmr-2xdaly-api -o esphome/test-powmr-2xdaly-api.yaml
           python3 tools/constructor.py --preset powmr-jbd-api -o esphome/test-powmr-jbd-api.yaml
-          python3 tools/constructor.py --preset powmr-2xjbd-api -o esphome/test-powmr-2xjbd-api.yaml
           python3 tools/constructor.py --preset powmr-nobms-api -o esphome/test-powmr-nobms-api.yaml
           python3 tools/constructor.py --preset voltronic-jk-api -o esphome/test-voltronic-jk-api.yaml
           python3 tools/constructor.py --preset voltronic-daly-api -o esphome/test-voltronic-daly-api.yaml

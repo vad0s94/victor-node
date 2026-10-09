@@ -48,14 +48,6 @@ PRESETS = {
         "transport": "mqtt",
         "rules": True,
     },
-    "powmr-2xjk-api": {
-        "description": "PowMr/Victor (Modbus 2341) + 2x JK BMS (Parallel Bank) + Native HA API",
-        "inverter": "powmr_2341",
-        "bms": "jk_ble",
-        "bms_packs": 2,
-        "transport": "api",
-        "rules": True,
-    },
     "powmr-daly-api": {
         "description": "PowMr/Victor (Modbus 2341) + Daly BMS (BLE) + Native Home Assistant API",
         "inverter": "powmr_2341",
@@ -64,27 +56,11 @@ PRESETS = {
         "transport": "api",
         "rules": True,
     },
-    "powmr-2xdaly-api": {
-        "description": "PowMr/Victor (Modbus 2341) + 2x Daly BMS (Parallel Bank) + Native HA API",
-        "inverter": "powmr_2341",
-        "bms": "daly_ble",
-        "bms_packs": 2,
-        "transport": "api",
-        "rules": True,
-    },
     "powmr-jbd-api": {
         "description": "PowMr/Victor (Modbus 2341) + JBD / Xiaoxiang BMS (BLE) + Native Home Assistant API",
         "inverter": "powmr_2341",
         "bms": "jbd_ble",
         "bms_packs": 1,
-        "transport": "api",
-        "rules": True,
-    },
-    "powmr-2xjbd-api": {
-        "description": "PowMr/Victor (Modbus 2341) + 2x JBD BMS (Parallel Bank) + Native HA API",
-        "inverter": "powmr_2341",
-        "bms": "jbd_ble",
-        "bms_packs": 2,
         "transport": "api",
         "rules": True,
     },
@@ -330,12 +306,6 @@ def interactive_wizard():
     bms_packs = 1
     bms_protocol = "JK02_32S"
     if bms != "none":
-        print("\n  Battery Bank Configuration (Parallel Packs):")
-        print("    [1] Single battery pack (1 BMS)")
-        print("    [2] 2 parallel battery packs (2 BMSs with bank aggregation & SoC delta warning)")
-        p_choice = input("  Choice [1]: ").strip() or "1"
-        bms_packs = 2 if p_choice == "2" else 1
-
         if bms == "jk_ble":
             print("\n  Select JK BMS Hardware / Protocol Version:")
             print("    [1] JK02_32S (Recommended: HW 11.x and newer, 24S / 32S boards, PB-series)")

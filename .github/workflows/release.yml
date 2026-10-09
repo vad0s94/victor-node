@@ -20,11 +20,8 @@ jobs:
         target:
           - powmr-jk-api
           - powmr-jk-mqtt
-          - powmr-2xjk-api
           - powmr-daly-api
-          - powmr-2xdaly-api
           - powmr-jbd-api
-          - powmr-2xjbd-api
           - powmr-nobms-api
           - voltronic-jk-api
           - voltronic-daly-api

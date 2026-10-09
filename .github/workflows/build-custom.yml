@@ -35,14 +35,6 @@ on:
           - jbd_ble
           - none
         default: jk_ble
-      bms_packs:
-        description: "Number of Battery Packs (1 or 2 parallel packs)"
-        required: true
-        type: choice
-        options:
-          - "1"
-          - "2"
-        default: "1"
       transport:
         description: "Transport / Connection"
         required: true
@@ -109,7 +101,7 @@ jobs:
             --board "${{ github.event.inputs.board }}" \
             --inverter "${{ github.event.inputs.inverter }}" \
             --bms "${{ github.event.inputs.bms }}" \
-            --bms-packs "${{ github.event.inputs.bms_packs }}" \
+            --bms-packs 1 \
             --transport "${{ github.event.inputs.transport }}" \
             $RULES_FLAG \
             -o "esphome/${{ github.event.inputs.node_name }}.yaml"

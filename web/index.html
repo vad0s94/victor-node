@@ -186,23 +186,15 @@
     </div>
     <div class="options-grid" id="bms-options">
       <div class="option-btn selected" data-value="jk">
-        <span class="option-title">JK BMS (1 акумулятор)</span>
+        <span class="option-title">JK BMS (BLE)</span>
         <span class="option-desc">Повний моніторинг кожної комірки (1..16S/24S), балансир по BLE</span>
       </div>
-      <div class="option-btn" data-value="2xjk">
-        <span class="option-title">2x JK BMS (2 паралельні банки)</span>
-        <span class="option-desc">Два паралельні акумулятори: спільний SoC, струм, контроль дельти</span>
-      </div>
       <div class="option-btn" data-value="daly">
-        <span class="option-title">Daly Smart BMS (1 акумулятор)</span>
+        <span class="option-title">Daly Smart BMS (BLE)</span>
         <span class="option-desc">Daly Smart BMS (Blue/standard), напруги, струм, температури</span>
       </div>
-      <div class="option-btn" data-value="2xdaly">
-        <span class="option-title">2x Daly BMS (2 паралельні банки)</span>
-        <span class="option-desc">Дві збірки Daly паралельно: підсумовування потужності та захист</span>
-      </div>
       <div class="option-btn" data-value="jbd">
-        <span class="option-title">JBD / Xiaoxiang (1 акумулятор)</span>
+        <span class="option-title">JBD / Xiaoxiang (BLE)</span>
         <span class="option-desc">Liontron, Overkill Solar, JBD BLE (комірки, ключі, SoC)</span>
       </div>
       <div class="option-btn" data-value="none">
@@ -291,18 +283,10 @@
         profile = selectedTransport === 'api' ? 'powmr-jk-api' : 'powmr-jk-mqtt';
         title = `PowMr / Victor + JK BMS (${selectedTransport === 'api' ? 'HA API' : 'MQTT'})`;
         desc = `Повний моніторинг інвертора Modbus 2341, 45+ параметрів JK BMS по BLE, автономні правила заряду на ESP32. Підключення через ${selectedTransport.toUpperCase()}.`;
-      } else if (selectedBms === '2xjk') {
-        profile = 'powmr-2xjk-api';
-        title = 'PowMr / Victor + 2x JK BMS Паралельні банки (HA API)';
-        desc = 'Підключення до двох паралельних акумуляторів JK BMS. Автоматичне обчислення спільного SoC, сумарної потужності, струму та моніторинг розбіжності SoC.';
       } else if (selectedBms === 'daly') {
         profile = 'powmr-daly-api';
         title = 'PowMr / Victor + Daly BMS (HA API)';
         desc = 'Моніторинг інвертора PowMr разом з акумулятором на базі Daly Smart BMS по Bluetooth. Контроль комірок та температур.';
-      } else if (selectedBms === '2xdaly') {
-        profile = 'powmr-2xdaly-api';
-        title = 'PowMr / Victor + 2x Daly BMS Паралельні банки (HA API)';
-        desc = 'Два паралельні акумулятори з Daly BMS: сумарний струм, потужність і спільний заряд.';
       } else if (selectedBms === 'jbd') {
         profile = 'powmr-jbd-api';
         title = 'PowMr / Victor + JBD / Xiaoxiang BMS (HA API)';
@@ -313,11 +297,11 @@
         desc = 'Легка прошивка для інверторів PowMr/Victor. Bluetooth вимкнено, контролюються всі параметри інвертора, навантаження та сонячних панелей.';
       }
     } else {
-      if (selectedBms === 'jk' || selectedBms === '2xjk') {
+      if (selectedBms === 'jk') {
         profile = 'voltronic-jk-api';
         title = 'Voltronic / Axpert PI30 + JK BMS (HA API)';
         desc = 'Підтримка інверторів родини Voltronic (Axpert, EASun, SP-3200) по протоколу PI30 разом з акумулятором JK BMS по Bluetooth.';
-      } else if (selectedBms === 'daly' || selectedBms === '2xdaly') {
+      } else if (selectedBms === 'daly') {
         profile = 'voltronic-daly-api';
         title = 'Voltronic / Axpert PI30 + Daly BMS (HA API)';
         desc = 'Моніторинг інверторів Voltronic/Axpert разом з Daly Smart BMS по Bluetooth.';
