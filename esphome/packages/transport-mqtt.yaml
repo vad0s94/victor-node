@@ -133,16 +133,7 @@ button:
     entity_category: config
     on_press:
       - lambda: |-
-          id(mqtt_client).disable();
-          if (!id(mqtt_broker_host_setting).state.empty()) {
-            id(mqtt_client).set_broker_address(id(mqtt_broker_host_setting).state);
-          }
-          if (id(mqtt_broker_port_setting).state > 0) {
-            id(mqtt_client).set_broker_port(static_cast<uint16_t>(id(mqtt_broker_port_setting).state));
-          }
-          id(mqtt_client).set_username(id(mqtt_username_setting).state);
-          id(mqtt_client).set_password(id(mqtt_password_setting).state);
-          id(mqtt_client).enable();
+          App.safe_reboot();
 
 text_sensor:
   - platform: template

@@ -95,3 +95,10 @@ text_sensor:
     name: "Firmware Version"
     hide_timestamp: false
     entity_category: diagnostic
+
+button:
+  - platform: restart
+    name: "Restart Node"
+    icon: mdi:restart
+    entity_category: config
+
