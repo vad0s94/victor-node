@@ -32,18 +32,20 @@ esp32_ble_tracker:
   on_ble_advertise:
     - then:
         - lambda: |-
-            auto name = x.get_name();
+            auto raw_name = x.get_name();
+            std::string dev_name = raw_name.empty() ? "BLE Device" : raw_name.c_str();
+
             char mac[18];
             x.address_str_to(mac);
             std::string mac_str(mac);
             int rssi = x.get_rssi();
 
             char line[64];
-            snprintf(line, sizeof(line), "%s %.*s %ddBm", mac, (int) std::min<size_t>(name.size(), 20),
-                     name.c_str(), rssi);
+            snprintf(line, sizeof(line), "%s %.*s %ddBm", mac, (int) std::min<size_t>(dev_name.size(), 20),
+                     dev_name.c_str(), rssi);
             id(bms_found)[mac_str] = std::string(line);
 
-            std::string lower_name = name;
+            std::string lower_name = dev_name;
             for (char &c : lower_name) c = tolower(c);
 
             bool is_bms = (lower_name.find("jk") != std::string::npos ||
@@ -57,17 +59,17 @@ esp32_ble_tracker:
 
             if (id(bms_slot_1_mac) == mac_str) {
               id(bms_slot_1_rssi) = rssi;
-              if (!name.empty()) id(bms_slot_1_name) = name;
+              if (dev_name != "BLE Device") id(bms_slot_1_name) = dev_name;
               return;
             }
             if (id(bms_slot_2_mac) == mac_str) {
               id(bms_slot_2_rssi) = rssi;
-              if (!name.empty()) id(bms_slot_2_name) = name;
+              if (dev_name != "BLE Device") id(bms_slot_2_name) = dev_name;
               return;
             }
             if (id(bms_slot_3_mac) == mac_str) {
               id(bms_slot_3_rssi) = rssi;
-              if (!name.empty()) id(bms_slot_3_name) = name;
+              if (dev_name != "BLE Device") id(bms_slot_3_name) = dev_name;
               return;
             }
 
@@ -78,7 +80,7 @@ esp32_ble_tracker:
                 id(bms_slot_2_rssi) = id(bms_slot_1_rssi);
               }
               id(bms_slot_1_mac) = mac_str;
-              id(bms_slot_1_name) = name.empty() ? "BLE Device" : name;
+              id(bms_slot_1_name) = dev_name;
               id(bms_slot_1_rssi) = rssi;
             } else if (id(bms_slot_2_mac).empty() || (is_bms && id(bms_slot_2_name) == "BLE Device")) {
               if (!id(bms_slot_2_mac).empty()) {
@@ -87,11 +89,11 @@ esp32_ble_tracker:
                 id(bms_slot_3_rssi) = id(bms_slot_2_rssi);
               }
               id(bms_slot_2_mac) = mac_str;
-              id(bms_slot_2_name) = name.empty() ? "BLE Device" : name;
+              id(bms_slot_2_name) = dev_name;
               id(bms_slot_2_rssi) = rssi;
             } else if (id(bms_slot_3_mac).empty()) {
               id(bms_slot_3_mac) = mac_str;
-              id(bms_slot_3_name) = name.empty() ? "BLE Device" : name;
+              id(bms_slot_3_name) = dev_name;
               id(bms_slot_3_rssi) = rssi;
             }
 
